@@ -137,9 +137,12 @@ export function parseListOptions(text) {
     return { metas, unsettable };
 }
 
+/** CI points this at an extracted mpv AppImage; the release is much newer than apt's. */
+const MPV_BIN = process.env.MPV_BIN ?? "mpv";
+
 /** First line of `mpv --version` is "mpv 0.41.0". */
 function readVersion() {
-    const out = execFileSync("mpv", ["--version"], { encoding: "utf8" });
+    const out = execFileSync(MPV_BIN, ["--version"], { encoding: "utf8" });
     return out.split("\n")[0]?.trim() ?? "";
 }
 
@@ -148,7 +151,7 @@ export async function captureListOptions() {
     const meta = JSON.parse(readFileSync(join(".cache", "meta.json"), "utf8"));
     const sha = String(meta.mpvCommit ?? "");
     if (sha === "") throw new Error("run scripts/fetch-manual.mjs first");
-    const text = execFileSync("mpv", ["--list-options"], { encoding: "utf8" });
+    const text = execFileSync(MPV_BIN, ["--list-options"], { encoding: "utf8" });
     const { metas, unsettable } = parseListOptions(text);
     const dir = join(".cache", sha);
     mkdirSync(dir, { recursive: true });

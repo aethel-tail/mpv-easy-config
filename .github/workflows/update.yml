@@ -6,6 +6,13 @@ name: update
 on:
   schedule:
     - cron: "0 3 * * *"
+  # Changing the update pipeline should exercise it once. Data commits use the
+  # built-in token, which does not re-trigger workflows, so this cannot loop.
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/update.yml"
+      - "scripts/**"
   workflow_dispatch:
     inputs:
       limit:
@@ -27,6 +34,8 @@ concurrency:
 env:
   NODE_VERSION: "24"
   LLAMA_TAG: b12600
+  # apt's mpv is far behind the manual; this AppImage tracks a recent release.
+  MPV_APPIMAGE: https://github.com/pkgforge-dev/mpv-AppImage/releases/download/v0.42.0%402026-11-07_1794059289/mpv-v0.42.0-anylinux-x86_64.AppImage
   # Override with a repository variable; nothing here is a secret.
   MODEL_URL: ${{ vars.TRANSLATE_MODEL_URL || 'https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf' }}
 
@@ -49,10 +58,19 @@ jobs:
       - name: Fetch the manual revision
         run: node scripts/fetch-manual.mjs
 
-      - name: Rebuild the option data
+      # apt's mpv on the runners lags the manual by several releases, which drops
+      # metadata coverage below the gate. The AppImage is unpacked and used directly.
+      - name: Fetch mpv
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends mpv
+          curl -sSL -o /tmp/mpv.AppImage "$MPV_APPIMAGE"
+          chmod +x /tmp/mpv.AppImage
+          cd /tmp && ./mpv.AppImage --appimage-extract > /dev/null
+          /tmp/squashfs-root/AppRun --version | head -1
+
+      - name: Rebuild the option data
+        env:
+          MPV_BIN: /tmp/squashfs-root/AppRun
+        run: |
           node scripts/list-options.mjs
           node scripts/build-data.mjs --out .cache/new/options.json
 
@@ -139,7 +157,7 @@ jobs:
           for lang in zh ja; do
             node scripts/translate.mjs --lang "$lang" \
               --shard ${{ matrix.shard }} --shards ${{ needs.plan.outputs.shards }} \
-              --limit ${{ inputs.limit || 0 }} --budget 2200 \
+              --limit ${{ inputs.limit || 2 }} --budget 2200 \
               --base-url http://127.0.0.1:8099 --model local
           done
 
