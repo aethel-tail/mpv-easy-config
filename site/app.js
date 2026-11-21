@@ -1,7 +1,15 @@
 import { buildMpvConf, countModified, isModified, parseMpvConf } from "./mpvconf.js";
 const STORAGE_KEY = "mpv-easy-config.v1";
-/** Machine translations keyed by textHash; empty when none have been generated yet. */
-let translations = {};
+const LANGS = ["zh", "ja", "en"];
+const LANG_LABELS = { zh: "中文", ja: "日本語", en: "English" };
+/** Machine translations per language, keyed by textHash; empty until generated. */
+const translations = { zh: {}, ja: {} };
+/** Translated description for an option, falling back to English. */
+function describe(option, lang) {
+    if (lang === "en")
+        return option.en;
+    return translations[lang][option.textHash] ?? option.en;
+}
 const MAX_SEARCH_HITS = 150;
 function el(tag, className = "", text) {
     const node = document.createElement(tag);
@@ -175,7 +183,7 @@ function optionRow(option, state, changed) {
     body.append(el("span", "default", `默认 ${defaultLabel}`));
     body.append(control(option, state, changed));
     const text = el("div", "desc");
-    text.append(description(state.lang === "zh" ? (translations[option.textHash] ?? option.en) : option.en));
+    text.append(description(describe(option, state.lang)));
     row.append(head, body, text);
     return row;
 }
@@ -191,7 +199,8 @@ export async function boot() {
         return;
     }
     const data = (await res.json());
-    translations = await loadTranslations("zh");
+    translations.zh = await loadTranslations("zh");
+    translations.ja = await loadTranslations("ja");
     const state = { values: load(), section: "", query: "", lang: "zh" };
     const bySection = new Map();
     for (const option of data.options) {
@@ -228,7 +237,7 @@ export async function boot() {
     };
     const matches = (option) => {
         const query = state.query.toLowerCase();
-        const localized = (translations[option.textHash] ?? "").toLowerCase();
+        const localized = LANGS.map((lang) => describe(option, lang)).join(" ").toLowerCase();
         return (option.name.toLowerCase().includes(query) ||
             option.en.toLowerCase().includes(query) ||
             localized.includes(query));
@@ -266,11 +275,13 @@ export async function boot() {
     render();
     const langButton = must("#lang");
     const showLang = () => {
-        langButton.textContent = state.lang === "zh" ? "中文" : "English";
-        langButton.title = state.lang === "zh" ? "显示英文原文" : "显示中文译文";
+        langButton.textContent = LANG_LABELS[state.lang];
+        langButton.title = "切换说明语言：中文 / 日本語 / 英文";
     };
     langButton.addEventListener("click", () => {
-        state.lang = state.lang === "zh" ? "en" : "zh";
+        const next = LANGS[(LANGS.indexOf(state.lang) + 1) % LANGS.length];
+        if (next !== undefined)
+            state.lang = next;
         showLang();
         render();
     });

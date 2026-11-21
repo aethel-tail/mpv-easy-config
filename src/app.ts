@@ -4,15 +4,25 @@ import type { Option, OptionsData } from "./types.js";
 
 const STORAGE_KEY = "mpv-easy-config.v1";
 
-/** Machine translations keyed by textHash; empty when none have been generated yet. */
-let translations: Record<string, string> = {};
+type Lang = "zh" | "ja" | "en";
+const LANGS: Lang[] = ["zh", "ja", "en"];
+const LANG_LABELS: Record<Lang, string> = { zh: "中文", ja: "日本語", en: "English" };
+
+/** Machine translations per language, keyed by textHash; empty until generated. */
+const translations: Record<"zh" | "ja", Record<string, string>> = { zh: {}, ja: {} };
+
+/** Translated description for an option, falling back to English. */
+function describe(option: Option, lang: Lang): string {
+    if (lang === "en") return option.en;
+    return translations[lang][option.textHash] ?? option.en;
+}
 const MAX_SEARCH_HITS = 150;
 
 interface State {
     values: Record<string, Value>;
     section: string;
     query: string;
-    lang: "zh" | "en";
+    lang: Lang;
 }
 
 function el(tag: string, className = "", text?: string): HTMLElement {
@@ -185,7 +195,7 @@ function optionRow(option: Option, state: State, changed: () => void): HTMLEleme
     body.append(control(option, state, changed));
 
     const text = el("div", "desc");
-    text.append(description(state.lang === "zh" ? (translations[option.textHash] ?? option.en) : option.en));
+    text.append(description(describe(option, state.lang)));
 
     row.append(head, body, text);
     return row;
@@ -204,7 +214,8 @@ export async function boot(): Promise<void> {
         return;
     }
     const data = (await res.json()) as OptionsData;
-    translations = await loadTranslations("zh");
+    translations.zh = await loadTranslations("zh");
+    translations.ja = await loadTranslations("ja");
     const state: State = { values: load(), section: "", query: "", lang: "zh" };
 
     const bySection = new Map<string, Option[]>();
@@ -243,7 +254,7 @@ export async function boot(): Promise<void> {
 
     const matches = (option: Option): boolean => {
         const query = state.query.toLowerCase();
-        const localized = (translations[option.textHash] ?? "").toLowerCase();
+        const localized = LANGS.map((lang) => describe(option, lang)).join(" ").toLowerCase();
         return (
             option.name.toLowerCase().includes(query) ||
             option.en.toLowerCase().includes(query) ||
@@ -285,11 +296,12 @@ export async function boot(): Promise<void> {
 
     const langButton = must<HTMLButtonElement>("#lang");
     const showLang = () => {
-        langButton.textContent = state.lang === "zh" ? "中文" : "English";
-        langButton.title = state.lang === "zh" ? "显示英文原文" : "显示中文译文";
+        langButton.textContent = LANG_LABELS[state.lang];
+        langButton.title = "切换说明语言：中文 / 日本語 / 英文";
     };
     langButton.addEventListener("click", () => {
-        state.lang = state.lang === "zh" ? "en" : "zh";
+        const next = LANGS[(LANGS.indexOf(state.lang) + 1) % LANGS.length];
+        if (next !== undefined) state.lang = next;
         showLang();
         render();
     });

@@ -1,0 +1,46 @@
+name: deploy
+
+# The update workflow deploys too, but only it can push data commits (workflow
+# commits do not trigger workflows). This one exists so that a change to the page
+# itself goes live without waiting for a translation pass.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "site/index.html"
+      - "site/style.css"
+      - "tsconfig.json"
+      - "package.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v5
