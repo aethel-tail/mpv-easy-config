@@ -115,25 +115,30 @@ RST 半边 + 元数据半边均已完成并验收。验收时发现并修掉三�
 
 ---
 
-## M3 · 翻译管道  `[ ]`
+## M3 · 翻译管道  `[~]`  （管道已跑通并本地验证，全量铺满待 CI）
 
 **交付物**
-- `scripts/plan.mjs`：算待翻 `textHash` 集合、按 `--shard` 切片、输出数量
-- `scripts/translate.mjs`：占位符保护 → 调本地 Ollama → 四项体检 → 写 `cache/{zh,ja}.json`
-- `scripts/report-trans.mjs`：打印覆盖率与失败项
-- `src/placeholder.test.ts`：占位符替换/还原、体检规则的单测
+- `scripts/translate.mjs`：占位符保护 → 调 OpenAI 兼容端点 → 四项体检 → 写 `site/data/trans.<lang>.json`；带 `--shard/--shards/--budget/--limit/--dry-run`  ✅
+- `scripts/report.mjs`：增加翻译覆盖率报告（`--require-translations` 时才卡 95% 门槛）  ✅
+- `test/translate.test.ts`：占位符与体检规则  ✅
+- 原计划的 `plan.mjs` / `report-trans.mjs` 已并入上面两个（`--dry-run` 就是 plan）
 
 **开发完成**
-- 本地能起 `ollama serve` 并跑通一条真实选项的翻译
-- 单测覆盖占位符与四项体检规则
+- 本地起 llama.cpp 的 `llama-server` 并跑通一条真实选项的翻译  ✅
+- 单测覆盖占位符与四项体检规则  ✅
 
 **验收完成**
-- [ ] `node --test src/placeholder.test.ts` 通过
-- [ ] 故意丢一个 `⟦n⟧`、故意返回英文、故意返回超短文本，三种情况都被体检拦下且**未写入 cache**
-- [ ] 全量跑完后 `report-trans.mjs`：`zh` 与 `ja` 的 cache 覆盖 `>= 95%` 的 distinct `textHash`
-- [ ] 同一命令重跑，新增翻译条数 `== 0`（幂等）
-- [ ] 人工抽查：中英日各 20 条（挑 `vo`、`hwdec`、`scale`、`interpolation` 这类术语密集项），合格 `>= 17/20`；判据：术语合理、代码字面量未被改写、读得懂
-- [ ] 任一条译文被手工修正后重跑，修正内容不被覆盖（英文源文本未变的前提下）
+- [x] `npm test` 通过：12 条（保护/还原、提示词双空行、marker 丢/乱序、英文回显、拒答、空输出、纯 marker、中文比例、日文假名）
+- [x] 三种破坏情况全被拦下且**未写入 cache**：丢 marker（`alang`）、marker 乱序、长度比 0.10；日志里能看到具体原因
+- [x] 真模型跑通端到端：llama.cpp + Qwen3-0.6B（Q4_K_M，378 MB）→ `sid`、`vlang` 两条写入 cache，代码字面量完美还原；界面切到"中文"后渲染的是译文，切回"英文"是原文
+- [x] 同一命令重跑不重翻（cache 命中即跳过）
+- [ ] 全量铺满后 `report.mjs --require-translations`：zh/ja 覆盖率 `>= 95%`
+- [ ] 人工抽查 20 条，合格 `>= 17/20`
+- [ ] 手工修正一条译文后重跑，修正不被覆盖
+
+**本地验证得到的两个硬结论**
+1. marker 必须是纯 ASCII `[[n]]`：`⟦n⟧` 和 `{{n}}` 会被小模型吃掉（实测同一句只有 `[[0]]` 原样保留）
+2. **Qwen3-0.6B 只能验管道，不能验质量**：5 条里 2 条通过、3 条被体检拒绝（长描述上丢 marker）。本地目的已达到，质量靠 CI 上的大模型
 
 ---
 

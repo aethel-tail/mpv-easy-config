@@ -1,5 +1,7 @@
 import { buildMpvConf, countModified, isModified, parseMpvConf } from "./mpvconf.js";
 const STORAGE_KEY = "mpv-easy-config.v1";
+/** Machine translations keyed by textHash; empty when none have been generated yet. */
+let translations = {};
 const MAX_SEARCH_HITS = 150;
 function el(tag, className = "", text) {
     const node = document.createElement(tag);
@@ -57,6 +59,19 @@ function load() {
             return {};
         const parsed = JSON.parse(raw);
         return typeof parsed === "object" && parsed !== null ? parsed : {};
+    }
+    catch {
+        return {};
+    }
+}
+/** Machine translations live next to the data and are optional: a missing file just
+ * means every description falls back to English. */
+async function loadTranslations(lang) {
+    try {
+        const res = await fetch(`./data/trans.${lang}.json`, { cache: "no-cache" });
+        if (!res.ok)
+            return {};
+        return (await res.json());
     }
     catch {
         return {};
@@ -160,7 +175,7 @@ function optionRow(option, state, changed) {
     body.append(el("span", "default", `默认 ${defaultLabel}`));
     body.append(control(option, state, changed));
     const text = el("div", "desc");
-    text.append(description(option.en));
+    text.append(description(state.lang === "zh" ? (translations[option.textHash] ?? option.en) : option.en));
     row.append(head, body, text);
     return row;
 }
@@ -176,7 +191,8 @@ export async function boot() {
         return;
     }
     const data = (await res.json());
-    const state = { values: load(), section: "", query: "" };
+    translations = await loadTranslations("zh");
+    const state = { values: load(), section: "", query: "", lang: "zh" };
     const bySection = new Map();
     for (const option of data.options) {
         const bucket = bySection.get(option.section);
@@ -212,7 +228,10 @@ export async function boot() {
     };
     const matches = (option) => {
         const query = state.query.toLowerCase();
-        return option.name.toLowerCase().includes(query) || option.en.toLowerCase().includes(query);
+        const localized = (translations[option.textHash] ?? "").toLowerCase();
+        return (option.name.toLowerCase().includes(query) ||
+            option.en.toLowerCase().includes(query) ||
+            localized.includes(query));
     };
     const render = () => {
         const changed = () => {
@@ -245,6 +264,17 @@ export async function boot() {
     });
     refreshStatus();
     render();
+    const langButton = must("#lang");
+    const showLang = () => {
+        langButton.textContent = state.lang === "zh" ? "中文" : "English";
+        langButton.title = state.lang === "zh" ? "显示英文原文" : "显示中文译文";
+    };
+    langButton.addEventListener("click", () => {
+        state.lang = state.lang === "zh" ? "en" : "zh";
+        showLang();
+        render();
+    });
+    showLang();
     // Export / import share one dialog: pasting a config is the fast path for both.
     const dialog = must("#dialog");
     const dialogTitle = must("#dialog-title");

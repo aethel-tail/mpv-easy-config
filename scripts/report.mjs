@@ -7,7 +7,7 @@ import { parseOptionsRst, sectionAnchor } from "./rst.mjs";
 
 const CACHE = ".cache";
 const DATA = "site/data/options.json";
-const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRatio: 0.02, metadataCoverage: 0.9 };
+const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRatio: 0.02, metadataCoverage: 0.9, translationCoverage: 0.95 };
 
 /** Newest fetched manual under .cache/<sha>/options.rst. */
 function locate() {
@@ -78,7 +78,7 @@ console.log("\nOK");
 
 // Metadata half: only meaningful once build-data has run against a real mpv.
 if (existsSync(DATA)) {
-    const data = JSON.parse(readFileSync(DATA, "utf8"));
+    const data = /** @type {import("../src/types.js").OptionsData} */ (JSON.parse(readFileSync(DATA, "utf8")));
     const all = data.options;
     /** @type {Record<string, number>} */
     const kinds = {};
@@ -98,6 +98,21 @@ if (existsSync(DATA)) {
     const bad = [];
     if (coverage < THRESHOLDS.metadataCoverage) {
         bad.push(`metadata coverage ${(coverage * 100).toFixed(1)}% < ${THRESHOLDS.metadataCoverage * 100}%`);
+    }
+
+    // Translation coverage is reported always, but only gated when asked: a local
+    // run is expected to be partial, while CI passes --require-translations.
+    const hashes = new Set(all.map((option) => option.textHash));
+    for (const lang of ["zh", "ja"]) {
+        const path = `site/data/trans.${lang}.json`;
+        if (!existsSync(path)) continue;
+        const cache = JSON.parse(readFileSync(path, "utf8"));
+        const done = [...hashes].filter((hash) => cache[hash] !== undefined).length;
+        const ratio = done / Math.max(hashes.size, 1);
+        console.log(`trans.${lang}.json: ${done}/${hashes.size} hashes (${(ratio * 100).toFixed(1)}%)`);
+        if (process.argv.includes("--require-translations") && ratio < THRESHOLDS.translationCoverage) {
+            bad.push(`${lang} translation coverage ${(ratio * 100).toFixed(1)}% < ${THRESHOLDS.translationCoverage * 100}%`);
+        }
     }
     if (bad.length > 0) {
         console.error(`\nFAIL\n- ${bad.join("\n- ")}`);
