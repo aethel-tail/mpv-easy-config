@@ -8,7 +8,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "node scripts/no-any.mjs && tsc -p tsconfig.json && tsc -p tsconfig.scripts.json",
-    "test": "node --test test/",
+    "test": "node --test",
     "serve": "python -m http.server -d site 8080"
   },
   "devDependencies": {

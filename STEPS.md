@@ -56,30 +56,35 @@ M2 与 M3 可并行（M3 只产出 `cache/*.json`，不碰前端）。
 
 ---
 
-## M1 · 数据管道  `[ ]`
+## M1 · 数据管道  `[~]`  （RST 半边已验收，`--list-options` 半边待 CI）
 
 **交付物**
-- `scripts/fetch-manual.mjs`：取 `mpv-player/mpv@master` 的 `DOCS/man/options.rst` 与 commit sha
-- `scripts/parse-rst.mjs`：RST → `{ name, section, en, anchor }[]`
-- `scripts/list-options.mjs`：解析 `mpv --list-options` → `{ name, widget, def, file, deprecated }`
-- `scripts/build-data.mjs`：合并 → `site/data/options.json` + `site/data/meta.json`
-- `scripts/report.mjs`：打印并断言覆盖率，不达标 `exit 1`
-- `src/options.test.ts`：对解析产物做结构断言
+- `scripts/fetch-manual.mjs`：取 `mpv-player/mpv@master` 的 `DOCS/man/options.rst` 与 commit sha  ✅
+- `scripts/parse-rst.mjs` → 实际为 `scripts/rst.mjs`：RST → `{ name, section, en, sectionAnchor }[]`  ✅
+- `scripts/list-options.mjs`：解析 `mpv --list-options` → `{ name, widget, def, file, deprecated }`  ⏳
+- `scripts/build-data.mjs`：合并 → `site/data/options.json` + `site/data/meta.json`  ⏳
+- `scripts/report.mjs`：打印并断言覆盖率，不达标 `exit 1`  ✅
+- `test/rst.test.ts`：对解析规则做单测（9 条）  ✅
 
 **开发完成**
 - 三个脚本能串起来跑完，产出 `options.json`
 - `report.mjs` 输出项数、控件分布、章节数、降级数
 
+RST 半边已完成：`fetch-manual.mjs` + `rst.mjs` + `report.mjs` + `test/rst.test.ts`。
+剩 `list-options.mjs` / `build-data.mjs` —— 本机无 mpv 二进制，这两步的验收放 CI（`apt install mpv`）。
+
 **验收完成**
-- [ ] `node scripts/build-data.mjs && node scripts/report.mjs` 退出码 0
-- [ ] `options.length >= 700`
-- [ ] 非 `text` 控件（flag/choice/number/list）占比 `>= 90%`
-- [ ] `section` 去重后 `>= 15` 个
-- [ ] `en` 为空的选项数 `== 0`
-- [ ] `meta.degraded.length / options.length <= 5%`（文档与 apt mpv 两侧缺失的总和）
-- [ ] 抽查 10 个知名选项（`scale`、`vo`、`hwdec`、`sub-font-size`、`ao`、`cache`、`volume`、`alang`、`screenshot-format`、`osd-font-size`）的 `widget.def` 与 `mpv --list-options` 实际输出逐字一致
-- [ ] 同一份 `options.rst` 连跑两次，产出 `options.json` 除 `generatedAt` 外完全一致（无随机序）
-- [ ] `node --test src/options.test.ts` 通过
+- [x] `node scripts/report.mjs` 退出码 0（对 mpv@d11ffba 实测通过）
+- [x] `options.length >= 700` → **809**
+- [ ] 非 `text` 控件（flag/choice/number/list）占比 `>= 90%` —— 待 `--list-options`
+- [x] `section` 去重后 `>= 15` 个 → **23**
+- [x] `en` 为空的选项数 `== 0`
+- [x] RST 泄漏（未转换的 `..` 指令 / ` ``` ` / `` `_ ``）占比 `<= 2%` → **0%**
+- [ ] `meta.degraded.length / options.length <= 5%` —— 待 `--list-options`
+- [ ] 抽查 10 个知名选项的 `widget.def` 与 `mpv --list-options` 输出逐字一致 —— 待 `--list-options`
+- [x] 同一份 `options.rst` 连跑两次，产出完全一致（440 KB 序列化逐字相同）
+- [x] `npm test` 通过（9 条：共享词条、章节归属、嵌套 term 不算选项、段落重排、admonition 展开、内部引用/外链、词条判定正确性、章节锚点 slug）
+- [x] 章节锚点与 mpv.io 实际 id 一致：`--anchors` 检查 **23/23** 命中
 
 ---
 

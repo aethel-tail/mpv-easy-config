@@ -23,6 +23,8 @@
 | `DOCS/man/options.rst` | 410 KB，`--选项` 头 **756 个** | 选项总量的基准 |
 | RST 中的元数据 | `Default:` 仅 69 处，`Choices:` **0 处** | 类型/默认值/枚举**不能**从文档取 |
 | `mpv --list-options` | `m_config_frontend.c:m_config_print_option_list()` 实现，格式稳定 | 元数据的唯一可靠来源 |
+| mpv.io 锚点 | 全站只有 **185 个 id、全是章节级**，`<dt>` 无 id | 无法深链到单个选项，`anchor` 改为 `sectionAnchor`（已核对 23/23 命中） |
+| `options.rst` 解析实测 | 818 个 term → 809 个去重选项、23 章节、0 空描述、RST 泄漏率 0% | M1 的 RST 半边达标 |
 | `translategemma:4b` | Ollama 官方，3.3 GB，128K ctx，55 语言（含 `zh-Hans` / `ja`），2026-01 发布 | 翻译主力模型 |
 | Actions 免费额度 | 公开仓库 + 标准 runner = 免费不限分钟，20 并发 | 分片并行的成本为 0 |
 
@@ -81,6 +83,7 @@ interface OptionBase {
   en: string;          // 英文描述（Markdown 子集）
   textHash: string;    // sha256(en) 前 12 位，用于增量翻译
   anchor: string;      // 形如 options-scale，用于深链到 mpv.io 手册
+  sectionAnchor: string; // 手册没有选项级锚点，只能深链到章节（如 gpu-renderer-options）
   file: boolean;       // [file] 标记
   deprecated: boolean; // [deprecated]
 }

@@ -15,9 +15,11 @@ export interface OptionBase {
     en: string;
     /** sha256(en), first 12 hex chars: the cache key for translations. */
     textHash: string;
-    /** Fragment of the mpv.io manual page, e.g. `options-scale`. */
-    anchor: string;
-    /** `[file]` in `mpv --list-options` output. */
+    /**
+     * Section id on the mpv.io manual page, e.g. `gpu-renderer-options`.
+     * The page has no per-option ids, so a deep link lands on the section.
+     */
+    sectionAnchor: string;    /** `[file]` in `mpv --list-options` output. */
     file: boolean;
     deprecated: boolean;
 }

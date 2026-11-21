@@ -1,0 +1,76 @@
+// Measures the RST parse against the acceptance thresholds in STEPS.md §M1.
+// Run it after fetch-manual.mjs; it exits non-zero when a threshold is missed so CI
+// fails loudly instead of publishing a half-parsed manual.
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { parseOptionsRst, sectionAnchor } from "./rst.mjs";
+
+const CACHE = ".cache";
+const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRatio: 0.02 };
+
+/** Newest fetched manual under .cache/<sha>/options.rst. */
+function locate() {
+    const dirs = readdirSync(CACHE, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name)
+        .sort();
+    const newest = dirs.at(-1);
+    if (newest === undefined) throw new Error(`no manual in ${CACHE}/; run scripts/fetch-manual.mjs first`);
+    return join(CACHE, newest, "options.rst");
+}
+
+const source = readFileSync(locate(), "utf8");
+const parsed = parseOptionsRst(source);
+
+const seen = new Map();
+const duplicates = [];
+for (const option of parsed) {
+    if (seen.has(option.name)) duplicates.push(option.name);
+    else seen.set(option.name, option);
+}
+const options = [...seen.values()];
+const sections = [...new Set(options.map((o) => o.section))];
+const empty = options.filter((o) => o.en === "");
+// Leftover RST: a directive, a stray double-backtick literal, or an unresolved
+// internal reference (`foo`_). Backticks inside paths like `_NET_WM_X` are not leaks,
+// and ` `` ` ``  is a valid Markdown code span containing a backtick.
+const RST_LEAK = /\.\. [a-z]+::|``|[a-z0-9]`_/;
+/** @param {string} text @returns {string} */
+const stripValid = (text) => text.replace(/`` [^`\n]+ ``/g, "").replace(/`` ` ``/g, "");
+const leaky = options.filter((o) => RST_LEAK.test(stripValid(o.en)));
+
+const report = {
+    parsedTerms: parsed.length,
+    options: options.length,
+    duplicateNames: duplicates,
+    sections: sections.length,
+    emptyDescriptions: empty.map((o) => o.name),
+    leakage: { count: leaky.length, ratio: leaky.length / Math.max(options.length, 1), sample: leaky.slice(0, 5).map((o) => o.name) },
+    avgChars: Math.round(options.reduce((n, o) => n + o.en.length, 0) / Math.max(options.length, 1)),
+};
+console.log(JSON.stringify(report, null, 2));
+
+const failures = [];
+if (options.length < THRESHOLDS.options) failures.push(`options ${options.length} < ${THRESHOLDS.options}`);
+if (sections.length < THRESHOLDS.sections) failures.push(`sections ${sections.length} < ${THRESHOLDS.sections}`);
+if (empty.length > THRESHOLDS.emptyDescriptions) failures.push(`empty descriptions ${empty.length} > ${THRESHOLDS.emptyDescriptions}`);
+if (report.leakage.ratio > THRESHOLDS.leakageRatio) failures.push(`rst leakage ${(report.leakage.ratio * 100).toFixed(1)}% > ${THRESHOLDS.leakageRatio * 100}%`);
+
+// Section anchors must exist as ids on the live manual page, otherwise deep links
+// land nowhere. Checked only when asked, since it needs the network.
+if (process.argv.includes("--anchors")) {
+    const html = await (await fetch("https://mpv.io/manual/master/")).text();
+    const ids = new Set([...html.matchAll(/\bid=["']([^"']+)["']/g)].map((m) => m[1]));
+    const missing = sections.map(sectionAnchor).filter((id) => !ids.has(id));
+    console.log(`\nanchors: ${sections.length - missing.length}/${sections.length} section ids found on the live page`);
+    if (missing.length > 0) {
+        console.log(`missing: ${missing.join(", ")}`);
+        failures.push(`${missing.length} section anchor(s) missing from the manual page`);
+    }
+}
+
+if (failures.length > 0) {
+    console.error(`\nFAIL\n- ${failures.join("\n- ")}`);
+    process.exit(1);
+}
+console.log("\nOK");
