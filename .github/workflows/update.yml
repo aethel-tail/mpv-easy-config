@@ -157,7 +157,7 @@ jobs:
           for lang in zh ja; do
             node scripts/translate.mjs --lang "$lang" \
               --shard ${{ matrix.shard }} --shards ${{ needs.plan.outputs.shards }} \
-              --limit ${{ inputs.limit || 2 }} --budget 2200 \
+              --limit ${{ inputs.limit || 0 }} --budget 2200 \
               --base-url http://127.0.0.1:8099 --model local
           done
 
