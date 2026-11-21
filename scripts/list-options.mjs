@@ -110,21 +110,31 @@ export function parseOptionLine(line) {
     return { name, widget, file, deprecated };
 }
 
+/** Lines describing an option that cannot be set from mpv.conf (alias or CLI-only). */
+const UNSETTABLE = /\[not in config files\]|(?:^|\s)for\s/;
+
 /**
  * @param {string} text full output of `mpv --list-options`
- * @returns {OptionMeta[]}
+ * @returns {{ metas: OptionMeta[], unsettable: string[] }}
  */
 export function parseListOptions(text) {
     /** @type {OptionMeta[]} */
     const metas = [];
+    /** @type {string[]} */
+    const unsettable = [];
     const seen = new Set();
     for (const line of text.split(/\r?\n/)) {
         const meta = parseOptionLine(line);
-        if (meta === null || seen.has(meta.name)) continue;
+        if (meta === null) {
+            const name = /^ --(\S+)\s/.exec(line)?.[1];
+            if (name !== undefined && UNSETTABLE.test(line)) unsettable.push(name);
+            continue;
+        }
+        if (seen.has(meta.name)) continue;
         seen.add(meta.name);
         metas.push(meta);
     }
-    return metas;
+    return { metas, unsettable };
 }
 
 /** First line of `mpv --version` is "mpv 0.41.0". */
@@ -139,10 +149,13 @@ export async function captureListOptions() {
     const sha = String(meta.mpvCommit ?? "");
     if (sha === "") throw new Error("run scripts/fetch-manual.mjs first");
     const text = execFileSync("mpv", ["--list-options"], { encoding: "utf8" });
-    const metas = parseListOptions(text);
+    const { metas, unsettable } = parseListOptions(text);
     const dir = join(".cache", sha);
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "list-options.json"), `${JSON.stringify({ mpvVersion: readVersion(), metas }, null, 2)}\n`);
+    writeFileSync(
+        join(dir, "list-options.json"),
+        `${JSON.stringify({ mpvVersion: readVersion(), metas, unsettable }, null, 2)}\n`,
+    );
     return { dir, count: metas.length };
 }
 

@@ -17,17 +17,20 @@ const hash = (text) => createHash("sha256").update(text).digest("hex").slice(0, 
  * @param {import("./rst.mjs").ParsedOption[]} parsed
  * @param {import("./list-options.mjs").OptionMeta[]} metas
  * @param {{ mpvCommit: string, mpvVersion: string }} versions
+ * @param {string[]} unsettable names mpv itself refuses to read from a config file
  * @returns {import("../src/types.js").OptionsData}
  */
-export function mergeOptions(parsed, metas, versions) {
+export function mergeOptions(parsed, metas, versions, unsettable = []) {
     const byName = new Map(metas.map((meta) => [meta.name, meta]));
+    const notSettable = new Set(unsettable);
     /** @type {import("../src/types.js").Option[]} */
     const options = [];
     /** @type {string[]} */
     const degraded = [];
     const seen = new Set();
     for (const option of parsed) {
-        if (seen.has(option.name)) continue; // a handful of terms are documented twice
+        // a handful of terms are documented twice; CLI-only options cannot go in mpv.conf
+        if (seen.has(option.name) || notSettable.has(option.name)) continue;
         seen.add(option.name);
         const meta = byName.get(option.name);
         if (meta === undefined) degraded.push(option.name);
@@ -70,7 +73,7 @@ if (import.meta.main) {
     const data = mergeOptions(parsed, captured.metas, {
         mpvCommit: dir.slice(CACHE.length + 1),
         mpvVersion: String(captured.mpvVersion ?? ""),
-    });
+    }, captured.unsettable ?? []);
     const out = process.argv.includes("--out")
         ? (process.argv[process.argv.indexOf("--out") + 1] ?? OUT)
         : OUT;

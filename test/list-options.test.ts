@@ -29,8 +29,12 @@ const FIXTURE = `Options:
 Total: 19 options
 `;
 
-const metas = parseListOptions(FIXTURE);
+const { metas, unsettable } = parseListOptions(FIXTURE);
 const byName = new Map(metas.map((m) => [m.name, m]));
+
+test("collects options that cannot be set from mpv.conf", () => {
+    assert.deepEqual(unsettable, ["screenshot-format", "volume-alias", "audio-device-add"]);
+});
 
 test("parses flags into a boolean default", () => {
     assert.deepEqual(byName.get("screenshot-sw")?.widget, { kind: "flag", def: false });

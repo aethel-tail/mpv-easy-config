@@ -253,7 +253,11 @@ export function parseOptionsRst(source) {
         );
         const dedented = body.map((l) => (l.trim() === "" ? "" : l.slice(Number.isFinite(indent) ? indent : 0)));
         const en = bodyToMarkdown(dedented);
-        for (const name of names) options.push({ name, section, en });
+        for (const name of names) {
+            // A term ending in "-" documents a family of options (``--cdda-...=...``), not one.
+            if (name.endsWith("-")) continue;
+            options.push({ name, section, en });
+        }
         i = end - 1;
     }
     return options;

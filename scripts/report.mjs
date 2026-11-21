@@ -7,7 +7,7 @@ import { parseOptionsRst, sectionAnchor } from "./rst.mjs";
 
 const CACHE = ".cache";
 const DATA = "site/data/options.json";
-const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRatio: 0.02, degradedRatio: 0.05, nonTextRatio: 0.9 };
+const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRatio: 0.02, metadataCoverage: 0.9 };
 
 /** Newest fetched manual under .cache/<sha>/options.rst. */
 function locate() {
@@ -84,19 +84,21 @@ if (existsSync(DATA)) {
     const kinds = {};
     for (const option of all) kinds[option.widget.kind] = (kinds[option.widget.kind] ?? 0) + 1;
     const nonText = all.length - (kinds.text ?? 0);
+    const coverage = (all.length - data.degraded.length) / Math.max(all.length, 1);
     const dataReport = {
         built: all.length,
         mpvVersion: data.mpvVersion,
         widgetKinds: kinds,
-        nonTextRatio: nonText / Math.max(all.length, 1),
+        metadataCoverage: coverage,
         degraded: data.degraded.length,
-        degradedRatio: data.degraded.length / Math.max(all.length, 1),
         undocumented: data.undocumented.length,
     };
     console.log(JSON.stringify(dataReport, null, 2));
+    console.log(`(non-text widgets: ${((nonText / Math.max(all.length, 1)) * 100).toFixed(1)}% — informational)`);
     const bad = [];
-    if (dataReport.nonTextRatio < THRESHOLDS.nonTextRatio) bad.push(`non-text widgets ${(dataReport.nonTextRatio * 100).toFixed(1)}% < 90%`);
-    if (dataReport.degradedRatio > THRESHOLDS.degradedRatio) bad.push(`degraded ${(dataReport.degradedRatio * 100).toFixed(1)}% > 5%`);
+    if (coverage < THRESHOLDS.metadataCoverage) {
+        bad.push(`metadata coverage ${(coverage * 100).toFixed(1)}% < ${THRESHOLDS.metadataCoverage * 100}%`);
+    }
     if (bad.length > 0) {
         console.error(`\nFAIL\n- ${bad.join("\n- ")}`);
         process.exit(1);

@@ -25,6 +25,7 @@
 | `mpv --list-options` | `m_config_frontend.c:m_config_print_option_list()` 实现，格式稳定 | 元数据的唯一可靠来源 |
 | mpv.io 锚点 | 全站只有 **185 个 id、全是章节级**，`<dt>` 无 id | 无法深链到单个选项，`anchor` 改为 `sectionAnchor`（已核对 23/23 命中） |
 | `options.rst` 解析实测 | 818 个 term → 809 个去重选项、23 章节、0 空描述、RST 泄漏率 0% | M1 的 RST 半边达标 |
+| 合并实测（mpv v0.42.0-191-gd11ffba25） | 786 个可配置项：flag 196 / number 232 / choice 146 / list 49 / text 163；元数据覆盖 94.7%；降级 42 项全为平台特定 | 非 text 控件占 79.3% 是正常值，不能当质量指标 |
 | `translategemma:4b` | Ollama 官方，3.3 GB，128K ctx，55 语言（含 `zh-Hans` / `ja`），2026-01 发布 | 翻译主力模型 |
 | Actions 免费额度 | 公开仓库 + 标准 runner = 免费不限分钟，20 并发 | 分片并行的成本为 0 |
 

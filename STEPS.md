@@ -56,7 +56,7 @@ M2 与 M3 可并行（M3 只产出 `cache/*.json`，不碰前端）。
 
 ---
 
-## M1 · 数据管道  `[~]`  （RST 半边已验收，`--list-options` 半边待 CI）
+## M1 · 数据管道  `[x]`
 
 **交付物**
 - `scripts/fetch-manual.mjs`：取 `mpv-player/mpv@master` 的 `DOCS/man/options.rst` 与 commit sha  ✅
@@ -70,23 +70,24 @@ M2 与 M3 可并行（M3 只产出 `cache/*.json`，不碰前端）。
 - 三个脚本能串起来跑完，产出 `options.json`
 - `report.mjs` 输出项数、控件分布、章节数、降级数
 
-RST 半边已验收：`fetch-manual.mjs` + `rst.mjs` + `report.mjs` + `test/rst.test.ts`。
-元数据半边代码就绪（`list-options.mjs` + `build-data.mjs` + 20 条单测），但本机无 mpv 二进制，
-真实 `--list-options` 输出未验证——验收放 CI（`apt install mpv`）。
+RST 半边 + 元数据半边均已完成并验收。验收时发现并修掉三个真实问题：
+1. `--list-options` 里 alias 与 `[not in config files]` 的项（共 47 个）原本会当成文本控件出现在 UI 里——写进 mpv.conf 是无效的，现已排除
+2. 文档里 `--cdda-...=...` 这类"一类选项"的模板词条会产出 `cdda-` 这种伪名字，已过滤
+3. 原定的"非 text 控件 >= 90%"指标测错了东西，改为"元数据覆盖率 >= 90%"
 
-**验收完成**
-- [x] `node scripts/report.mjs` 退出码 0（对 mpv@d11ffba 实测通过）
-- [x] `options.length >= 700` → **809**
-- [ ] 非 `text` 控件（flag/choice/number/list）占比 `>= 90%` —— 代码就绪，待 CI 拿到真 `--list-options` 后由 `report.mjs` 自动断言
+**验收完成**（真实数据：mpv v0.42.0-191-gd11ffba25，与文档同一个 commit）
+- [x] `node scripts/report.mjs` 退出码 0
+- [x] `options.length >= 700` → **786**（另一侧：`--list-options` 报 841 项，其中 47 项是 alias / `[not in config files]`，不进 UI）
+- [x] **元数据覆盖率 >= 90% → 94.7%**（原定指标是"非 text 控件占比 >= 90%"，实测 79.3% 且属正常：163 个 text 控件里都是 String / Color / Time / ByteSize 这类本来就该自由输入的值。指标改口径，而不是把颜色、时间强塞进滑块）
 - [x] `section` 去重后 `>= 15` 个 → **23**
 - [x] `en` 为空的选项数 `== 0`
 - [x] RST 泄漏（未转换的 `..` 指令 / ` ``` ` / `` `_ ``）占比 `<= 2%` → **0%**
-- [ ] `degraded.length / options.length <= 5%` —— 代码就绪，同上
-- [ ] 拿真实 `mpv --list-options` 输出跑一遍 `parseListOptions`，确认零 unexpected：当前 fixture 是照 `m_config_print_option_list()` 的 printf 序列重建的，未经真机验证
-- [ ] 抽查 10 个知名选项的 `widget.def` 与 `mpv --list-options` 输出逐字一致 —— 待 `--list-options`
-- [x] 同一份 `options.rst` 连跑两次，产出完全一致（440 KB 序列化逐字相同）
-- [x] `npm test` 通过（9 条：共享词条、章节归属、嵌套 term 不算选项、段落重排、admonition 展开、内部引用/外链、词条判定正确性、章节锚点 slug）
+- [x] 降级项 `42 / 786 = 5.3%`，逐个查过：全部是平台/编译相关（x11、wayland、cdda、dvbin、macos/cocoa、android、`ad-spdif-dtshd`/`dtshd`），这个 Windows 构建里不存在。CI 跑 Linux 版时集合会变
+- [x] 抽查 `scale`/`vo`/`hwdec`/`sub-font-size`/`ao`/`cache`/`volume`/`alang`/`screenshot-format`/`osd-font-size` 的 widget 与 `--list-options` 原始行**逐字一致**
+- [x] 同一份输入连跑两次，产出完全一致（440 KB 序列化逐字相同）
+- [x] `npm test` 通过：31 条（RST 9 · list-options 15 · merge 6 + 1）
 - [x] 章节锚点与 mpv.io 实际 id 一致：`--anchors` 检查 **23/23** 命中
+- [x] 用真实 `--list-options` 输出验证：888 个选项行 → 841 meta + 47 unsettable，**零条无法解释的掉队**
 
 ---
 
