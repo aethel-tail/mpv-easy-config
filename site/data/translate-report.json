@@ -1,0 +1,140 @@
+[
+  {
+    "lang": "zh",
+    "shard": 0,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "ja",
+    "shard": 0,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "zh",
+    "shard": 1,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "ja",
+    "shard": 1,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "zh",
+    "shard": 2,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "ja",
+    "shard": 2,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "zh",
+    "shard": 3,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "ja",
+    "shard": 3,
+    "pending": 2,
+    "translated": 1,
+    "rejected": 1,
+    "samples": [
+      {
+        "name": "pitch",
+        "reason": "markers [0,3,1,2,4,5,6,7,8,9,10] != [0,1,2,3,4,5,6,7,8,9,10]"
+      }
+    ]
+  },
+  {
+    "lang": "zh",
+    "shard": 4,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "ja",
+    "shard": 4,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "zh",
+    "shard": 5,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "ja",
+    "shard": 5,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "zh",
+    "shard": 6,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "ja",
+    "shard": 6,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  },
+  {
+    "lang": "zh",
+    "shard": 7,
+    "pending": 2,
+    "translated": 1,
+    "rejected": 1,
+    "samples": [
+      {
+        "name": "end",
+        "reason": "markers [1,0,2] != [0,1,2]"
+      }
+    ]
+  },
+  {
+    "lang": "ja",
+    "shard": 7,
+    "pending": 2,
+    "translated": 2,
+    "rejected": 0,
+    "samples": []
+  }
+]
