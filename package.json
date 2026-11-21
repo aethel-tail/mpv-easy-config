@@ -1,0 +1,18 @@
+{
+  "name": "mpv-easy-config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WebUI for configuring mpv.conf, driven by the mpv master manual with machine translation",
+  "license": "GPL-2.0-or-later",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "node scripts/no-any.mjs && tsc -p tsconfig.json && tsc -p tsconfig.scripts.json",
+    "test": "node --test test/",
+    "serve": "python -m http.server -d site 8080"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "5.9"
+  }
+}
