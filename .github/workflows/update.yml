@@ -110,7 +110,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: data
-          path: site/data
+          path: incoming
 
       - name: Skip an idle shard before paying for the model download
         id: check
@@ -194,12 +194,22 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: data
-          path: site/data
+          path: incoming
 
       - uses: actions/download-artifact@v8
         with:
           pattern: trans-*
           path: parts
+
+      # The checkout is the commit that triggered the run, which can be hours old by
+      # the time the shards finish. Rebasing onto the current main first means the
+      # push always fast-forwards, and merge-trans keeps whatever translation main
+      # already has. Pushing straight away would drop the whole run's work.
+      - name: Align with main
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+          cp incoming/options.json site/data/options.json
 
       - name: Merge translations
         run: node scripts/merge-trans.mjs parts site/data
