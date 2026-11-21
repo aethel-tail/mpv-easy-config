@@ -14,7 +14,7 @@ const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRa
 function locate() {
     if (!existsSync(CACHE)) return null;
     const dirs = readdirSync(CACHE, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
+        .filter((d) => d.isDirectory() && /^[0-9a-f]{40}$/.test(d.name))
         .map((d) => d.name)
         .sort();
     const newest = dirs.at(-1);

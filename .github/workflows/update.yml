@@ -1,6 +1,6 @@
 name: update
 
-# Fetches the mpv manual, rebuilds the option data, translates what is missing
+# Fetches the mpv manual, rebuilds the option data, translates whatever is missing
 # inside the runner (no API keys anywhere), commits the result and deploys Pages.
 
 on:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       limit:
-        description: "每个分片最多翻译多少条（0 = 不限）"
+        description: "每个分片每种语言最多翻译多少条（0 = 不限）"
         default: "0"
       shards:
         description: "分片数（0 = 用仓库变量 SHARDS，缺省 8）"
@@ -34,13 +34,13 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.diff.outputs.changed }}
-      pending: ${{ steps.diff.outputs.pending }}
-      shards: ${{ steps.diff.outputs.shards }}
-      shardList: ${{ steps.diff.outputs.shardList }}
+      changed: ${{ steps.plan.outputs.changed }}
+      pending: ${{ steps.plan.outputs.pending }}
+      shards: ${{ steps.plan.outputs.shards }}
+      shardList: ${{ steps.plan.outputs.shardList }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -49,41 +49,24 @@ jobs:
       - name: Fetch the manual revision
         run: node scripts/fetch-manual.mjs
 
-      - name: Detect an mpv doc change
-        id: diff
-        run: |
-          node -e '
-          const fs = require("node:fs");
-          const out = (key, value) => fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
-          const meta = JSON.parse(fs.readFileSync(".cache/meta.json", "utf8"));
-          const committed = JSON.parse(fs.readFileSync("site/data/options.json", "utf8"));
-          const changed = meta.mpvCommit !== committed.mpvCommit;
-          out("changed", changed);
-          const shards = Number(process.env.INPUT_SHARDS || 0) || Number(process.env.VAR_SHARDS || 8);
-          out("shards", shards);
-          out("shardList", JSON.stringify([...Array(shards).keys()]));
-          const load = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return {}; } };
-          const zh = load("site/data/trans.zh.json");
-          const ja = load("site/data/trans.ja.json");
-          const hashes = new Set(committed.options.map((o) => o.textHash));
-          const pending = [...hashes].filter((h) => zh[h] === undefined || ja[h] === undefined).length;
-          out("pending", pending);
-          console.log(`${hashes.size} hashes, ${pending} pending pairs, doc ${changed ? "changed" : "unchanged"}`);
-          '
-        env:
-          INPUT_SHARDS: ${{ inputs.shards }}
-          VAR_SHARDS: ${{ vars.SHARDS }}
-
       - name: Rebuild the option data
-        if: steps.diff.outputs.changed == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends mpv
           node scripts/list-options.mjs
-          node scripts/build-data.mjs
-          node scripts/report.mjs
+          node scripts/build-data.mjs --out .cache/new/options.json
 
-      - uses: actions/upload-artifact@v4
+      - name: Decide what needs doing
+        id: plan
+        run: node scripts/plan.mjs
+        env:
+          SHARDS_INPUT: ${{ inputs.shards }}
+          SHARDS_VAR: ${{ vars.SHARDS }}
+
+      - name: Verify the data
+        run: node scripts/report.mjs
+
+      - uses: actions/upload-artifact@v7
         with:
           name: data
           path: site/data/options.json
@@ -99,14 +82,14 @@ jobs:
       matrix:
         shard: ${{ fromJSON(needs.plan.outputs.shardList) }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: data
           path: site/data
@@ -114,7 +97,8 @@ jobs:
       - name: Skip an idle shard before paying for the model download
         id: check
         run: |
-          echo "pending=$(node scripts/translate.mjs --lang zh --shard ${{ matrix.shard }} --shards ${{ needs.plan.outputs.shards }} --dry-run | grep -oE '^[0-9]+')" >> "$GITHUB_OUTPUT"
+          counted=$(node scripts/translate.mjs --lang zh --shard ${{ matrix.shard }} --shards ${{ needs.plan.outputs.shards }} --dry-run)
+          echo "pending=$(printf '%s' "$counted" | grep -oE '^[0-9]+')" >> "$GITHUB_OUTPUT"
 
       - name: Fetch llama.cpp
         if: steps.check.outputs.pending != '0'
@@ -127,7 +111,7 @@ jobs:
       - name: Cache the model
         if: steps.check.outputs.pending != '0'
         id: model
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/model.gguf
           key: model-${{ hashFiles('.github/workflows/update.yml') }}
@@ -145,7 +129,9 @@ jobs:
             if curl -sf http://127.0.0.1:8099/health > /dev/null; then exit 0; fi
             sleep 2
           done
-          echo "llama-server did not become healthy"; tail -20 /tmp/server.log; exit 1
+          echo "llama-server did not become healthy"
+          tail -20 /tmp/server.log
+          exit 1
 
       - name: Translate
         if: steps.check.outputs.pending != '0'
@@ -157,7 +143,7 @@ jobs:
               --base-url http://127.0.0.1:8099 --model local
           done
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always() && steps.check.outputs.pending != '0'
         with:
           name: trans-${{ matrix.shard }}
@@ -175,19 +161,19 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: data
           path: site/data
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: trans-*
           path: parts
@@ -215,9 +201,9 @@ jobs:
             git push
           fi
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -1,32 +1,29 @@
-// Fetches the manual source at the commit that last touched DOCS/man, so a run
-// always parses exactly one revision and the commit sha can be recorded in meta.
+// Fetches the manual source at one exact revision, so a run always parses a single
+// consistent snapshot and can record which revision it used.
+//
+// The revision comes from `git ls-remote` rather than the REST API: unauthenticated
+// API calls are rate limited per IP, and GitHub-hosted runners share IPs, which made
+// the very first CI run fail before it parsed anything.
+import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 const REPO = "mpv-player/mpv";
-const MAN_DIR = "DOCS/man";
 const CACHE = ".cache";
 
-/**
- * @param {string} url
- * @returns {Promise<Response>}
- */
-async function get(url) {
-    const res = await fetch(url, { headers: { accept: "application/vnd.github+json" } });
-    if (!res.ok) throw new Error(`GET ${url} -> ${res.status} ${res.statusText}`);
-    return res;
-}
-
-/**
- * Latest commit touching the manual directory.
- * @returns {Promise<string>}
- */
-async function latestManualCommit() {
-    const res = await get(`https://api.github.com/repos/${REPO}/commits?path=${MAN_DIR}&per_page=1`);
-    const body = await res.json();
-    const sha = Array.isArray(body) ? body[0]?.sha : undefined;
-    if (typeof sha !== "string") throw new Error("unexpected commits response");
-    return sha;
+/** Head of the master branch, or "master" if git is unavailable. */
+function headRevision() {
+    try {
+        const out = execFileSync("git", ["ls-remote", `https://github.com/${REPO}.git`, "refs/heads/master"], {
+            encoding: "utf8",
+            timeout: 60_000,
+        });
+        const sha = out.split(/\s+/)[0] ?? "";
+        return /^[0-9a-f]{40}$/.test(sha) ? sha : "master";
+    } catch (error) {
+        console.error(`git ls-remote failed, falling back to master: ${/** @type {Error} */ (error).message}`);
+        return "master";
+    }
 }
 
 /**
@@ -34,8 +31,10 @@ async function latestManualCommit() {
  * @returns {Promise<{ sha: string, options: string, dir: string }>}
  */
 export async function fetchManual(sha) {
-    const rev = sha === "" ? await latestManualCommit() : sha;
-    const res = await get(`https://raw.githubusercontent.com/${REPO}/${rev}/DOCS/man/options.rst`);
+    const rev = sha === "" ? headRevision() : sha;
+    const url = `https://raw.githubusercontent.com/${REPO}/${rev}/DOCS/man/options.rst`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`GET ${url} -> ${res.status} ${res.statusText}`);
     const options = await res.text();
     const dir = join(CACHE, rev);
     mkdirSync(dir, { recursive: true });
@@ -45,7 +44,6 @@ export async function fetchManual(sha) {
 }
 
 if (import.meta.main) {
-    const sha = process.argv[2] ?? "";
-    const result = await fetchManual(sha);
+    const result = await fetchManual(process.argv[2] ?? "");
     console.log(`fetched mpv@${result.sha.slice(0, 7)} -> ${result.dir}/options.rst (${result.options.length} bytes)`);
 }

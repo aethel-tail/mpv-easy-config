@@ -58,7 +58,7 @@ export function mergeOptions(parsed, metas, versions, unsettable = []) {
 /** Newest fetched revision directory under .cache. */
 function locate() {
     const dirs = readdirSync(CACHE, { withFileTypes: true })
-        .filter((entry) => entry.isDirectory())
+        .filter((entry) => entry.isDirectory() && /^[0-9a-f]{40}$/.test(entry.name))
         .map((entry) => entry.name)
         .sort();
     const newest = dirs.at(-1);
