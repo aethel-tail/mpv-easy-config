@@ -5,6 +5,7 @@
     --line: #e5e7eb;
     --accent: #2563eb;
     --raised: #f9fafb;
+    --warn: #b45309;
     color-scheme: light dark;
 }
 
@@ -16,6 +17,7 @@
         --line: #2b2f37;
         --accent: #6ea8fe;
         --raised: #1d2027;
+        --warn: #fbbf24;
     }
 }
 
@@ -37,43 +39,255 @@ a {
     color: var(--accent);
 }
 
+code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 0.92em;
+}
+
 .muted {
     color: var(--muted);
-}
-
-.topbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--line);
-    position: sticky;
-    top: 0;
-    background: var(--bg);
-    z-index: 1;
-}
-
-.topbar h1 {
-    font-size: 16px;
-    margin: 0;
-    font-weight: 600;
+    font-size: 12px;
 }
 
 .spacer {
     flex: 1;
 }
 
-.app {
+button {
+    font: inherit;
+    border: 1px solid var(--line);
+    background: var(--accent);
+    color: #fff;
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+}
+
+button.ghost {
+    background: transparent;
+    color: var(--fg);
+}
+
+button:hover {
+    filter: brightness(1.08);
+}
+
+input,
+textarea {
+    font: inherit;
+    color: var(--fg);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 2;
+    flex-wrap: wrap;
+}
+
+.topbar h1 {
+    font-size: 15px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.topbar input[type="search"] {
+    width: 240px;
+}
+
+.layout {
     flex: 1;
+    display: flex;
+    align-items: stretch;
+    min-height: 0;
+}
+
+.sections {
+    width: 210px;
+    flex: none;
+    border-right: 1px solid var(--line);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    max-height: calc(100vh - 90px);
+    position: sticky;
+    top: 49px;
+}
+
+.section {
+    background: transparent;
+    color: var(--fg);
+    border: none;
+    border-radius: 6px;
+    text-align: left;
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 4px 8px;
+    font-size: 13px;
+}
+
+.section.active {
+    background: var(--raised);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.section .count {
+    margin-left: auto;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.options {
+    flex: 1;
+    min-width: 0;
+    padding: 12px 16px 40px;
+}
+
+.list-title {
+    font-size: 14px;
+    margin: 4px 0 12px;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.row {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}
+
+.row.modified {
+    border-color: var(--accent);
+}
+
+.row-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.opt-name {
+    font-weight: 600;
+}
+
+.opt-name.deprecated {
+    text-decoration: line-through;
+    color: var(--muted);
+}
+
+.badge {
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 0 4px;
+}
+
+.doc-link {
+    font-size: 12px;
+}
+
+.row-body {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0;
+}
+
+.row-body .default {
+    font-size: 11px;
+    color: var(--muted);
+    min-width: 96px;
+}
+
+.row-body input[type="text"],
+.row-body input[type="number"] {
+    width: 280px;
+    max-width: 60vw;
+}
+
+.control-with-list {
+    display: contents;
+}
+
+.desc {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.desc p {
+    margin: 4px 0;
+}
+
+.desc ul {
+    margin: 4px 0;
+    padding-left: 20px;
+}
+
+.hit-section {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+dialog {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--fg);
+    width: min(720px, 92vw);
     padding: 16px;
+}
+
+dialog::backdrop {
+    background: rgb(0 0 0 / 45%);
+}
+
+dialog h2 {
+    margin: 0 0 8px;
+    font-size: 15px;
+}
+
+#dialog-text {
+    width: 100%;
+    height: 320px;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 13px;
+    resize: vertical;
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 4px;
 }
 
 .footer {
     border-top: 1px solid var(--line);
-    padding: 12px 16px;
-    font-size: 12px;
+    padding: 10px 16px;
 }
 
 .footer p {
-    margin: 4px 0;
+    margin: 2px 0;
+}
+
+@media (max-width: 720px) {
+    .sections {
+        display: none;
+    }
 }

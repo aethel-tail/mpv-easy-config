@@ -8,14 +8,35 @@
     </head>
     <body>
         <header class="topbar">
-            <h1>mpv 配置生成器</h1>
-            <div class="spacer"></div>
+            <h1>mpv 配置</h1>
+            <input id="search" type="search" placeholder="搜索选项名或说明…" autocomplete="off" />
+            <output id="status" class="muted"></output>
+            <span class="spacer"></span>
+            <button id="reset" type="button" class="ghost">清空修改</button>
+            <button id="import" type="button" class="ghost">导入</button>
+            <button id="export" type="button">导出 mpv.conf</button>
             <output id="version" class="muted"></output>
         </header>
 
-        <main id="app" class="app">
-            <p class="muted">loading…</p>
-        </main>
+        <div class="layout">
+            <nav id="sections" class="sections" aria-label="章节"></nav>
+            <main id="options" class="options">
+                <p class="muted">loading…</p>
+            </main>
+        </div>
+
+        <dialog id="dialog">
+            <h2 id="dialog-title"></h2>
+            <textarea id="dialog-text" spellcheck="false"></textarea>
+            <p id="dialog-note" class="muted"></p>
+            <div class="dialog-actions">
+                <button id="dialog-copy" type="button" class="ghost">复制</button>
+                <button id="dialog-download" type="button" class="ghost">下载文件</button>
+                <button id="dialog-import" type="button">导入文本</button>
+                <span class="spacer"></span>
+                <form method="dialog"><button type="submit" class="ghost">关闭</button></form>
+            </div>
+        </dialog>
 
         <footer class="footer muted">
             <p>

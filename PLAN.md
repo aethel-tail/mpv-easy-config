@@ -148,7 +148,12 @@ site/index.html  site/style.css  site/data/*.json
 - 渲染策略：按章节懒渲染，默认只展开第一节；搜索时按命中过滤再建 DOM。首屏 DOM < 100 节点。
 - 状态：`{ values: Record<string, ...>, lang, query, expanded: Set<string> }`，`localStorage` 去抖持久化。
 - 导出：只输出与默认值不同的项 → `mpv.conf`（下载 + 复制）。导入：解析现有 `mpv.conf` 回填状态，未知项列出提示而非静默丢弃。
-- `buildMpvConf` / `parseMpvConf` 是纯函数并 `export`，测试用 `node --test src/*.test.ts`（Node 24 原生类型擦除，无需编译）。
+- `buildMpvConf` / `parseMpvConf` 是纯函数并 `export`，测试用 `node --test`（Node 24 原生类型擦除，测试直接 import `src/*.ts`，无需先构建）。
+
+实现时的三处简化（都是为了少写代码，且不损失可用性）：
+- `choice` 用 `<input list>` + `<datalist>`，而不是纯下拉框：枚举来自某一个具体构建（如 `vo` 的驱动列表随编译期变化），必须允许手填
+- `number` 用 `<input type=number>` 带 `min`/`max` 提示，不做滑块：有些范围是 0–2^63，滑块无意义
+- `list` 用逗号分隔的文本框，不做可增删行编辑器：mpv 的列表语法就是逗号分隔，行编辑器是 M2 之后的抛光项
 
 ## 7. CI
 
