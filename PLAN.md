@@ -45,7 +45,7 @@
 ```text
 GitHub Actions（cron 每日 03:00 UTC + 手动）
  ├─ plan     : mpv master 最近改动 DOCS/man/ 的 commit sha
- │             与 data/meta.json 比对 → 无变化则全流程终止（不下载模型）
+ │             与 options.json 里的 mpvCommit 比对 → 无变化则全流程终止（不下载模型）
  ├─ data     : 拉 DOCS/man/options.rst → RST 解析（描述/章节）
  │             + apt mpv → --list-options（类型/默认/范围/枚举）
  │             → 按名称合并 → site/data/options.json
@@ -56,13 +56,15 @@ GitHub Actions（cron 每日 03:00 UTC + 手动）
 
 ## 4. 数据契约
 
-`site/data/options.json`：
+`site/data/options.json`（唯一数据文件，页面只请求这一个）：
 
 ```jsonc
 {
   "generatedAt": "2026-11-21T03:12:00Z",
   "mpvCommit": "<40 hex>",
-  "mpvVersion": "0.41.0",          // 取元数据所用的 apt 版 mpv
+  "mpvVersion": "mpv 0.41.0",   // 取元数据所用的 apt 版 mpv
+  "degraded": [],               // 手册有、mpv 没报 → 降为文本控件
+  "undocumented": [],           // mpv 报了、手册没写 → 不进 UI，仅计数
   "options": [ /* Option[] */ ]
 }
 ```
@@ -74,7 +76,7 @@ type Widget =
   | { kind: "flag";    def: boolean }
   | { kind: "choice";  choices: string[]; def: string }
   | { kind: "number";  min: number | null; max: number | null; def: string }
-  | { kind: "list";    def: string[] }
+  | { kind: "list";    def: string }
   | { kind: "text";    def: string };
 
 interface OptionBase {
@@ -94,7 +96,7 @@ type Option = OptionBase & { widget: Widget };
 规则：
 
 - `[not in config files]` 的选项（含全部 action 变体）**不进入** `options`，mpv.conf 里写不了。
-- `--list-options` 与文档任一侧缺失的选项**保留**，缺失字段降级为 `{ kind: "text" }` 并在 `data/meta.json` 记一条 `degraded[]`。
+- `--list-options` 与文档任一侧缺失的选项：手册有、mpv 没报 → 文本控件 + 记入 `degraded`；mpv 报了、手册没写 → 不进 UI + 记入 `undocumented`（名字无说明的选项放在 UI 里只是噪音）。
 - 枚举来自 apt 版 mpv 的编译期配置，可能少于文档。UI 的下拉框必须带"自定义输入"。
 
 `site/data/cache.<lang>.json`：`{ [textHash: string]: string }`。
@@ -186,7 +188,7 @@ jobs:
 | --- | --- |
 | CPU 上 4B 模型吞吐估算偏 2× | 分片并行吸掉；真超时调 `SHARDS`；分片失败是部分失败，不整体失败 |
 | `translategemma:4b` tag 日后被重新量化 | 首次跑通后把 digest 写入注释，必要时固定为 `translategemma:4b@sha256:...` |
-| apt 版 mpv 落后于 master 文档 | 降级为文本输入，`meta.json` 记录 `mpvVersion` 与 `degraded[]`；页面标注"基于 master@sha（不稳定）" |
+| apt 版 mpv 落后于 master 文档 | 降级为文本输入，`options.json` 记录 `mpvVersion` 与 `degraded[]`；页面标注"基于 master@sha（不稳定）" |
 | 4B 模型术语不准（filter / scaler / interpolation） | 占位符保护代码字面量；cache 人工可覆盖且永久生效 |
 | RST 结构变化 | 解析器带覆盖率报告，低于阈值 CI 直接红，不会静默产出残缺数据 |
 

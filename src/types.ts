@@ -3,7 +3,7 @@ export type Widget =
     | { kind: "flag"; def: boolean }
     | { kind: "choice"; choices: string[]; def: string }
     | { kind: "number"; min: number | null; max: number | null; def: string }
-    | { kind: "list"; def: string[] }
+    | { kind: "list"; def: string }
     | { kind: "text"; def: string };
 
 export interface OptionBase {
@@ -32,6 +32,10 @@ export interface OptionsData {
     mpvCommit: string;
     /** mpv version whose `--list-options` supplied the metadata; may lag mpvCommit. */
     mpvVersion: string;
+    /** Documented options that the mpv build did not report; they degrade to text. */
+    degraded: string[];
+    /** Options the mpv build reported but the manual does not describe; dropped. */
+    undocumented: string[];
     options: Option[];
 }
 

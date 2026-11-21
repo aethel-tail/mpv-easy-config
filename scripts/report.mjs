@@ -1,12 +1,13 @@
 // Measures the RST parse against the acceptance thresholds in STEPS.md §M1.
 // Run it after fetch-manual.mjs; it exits non-zero when a threshold is missed so CI
 // fails loudly instead of publishing a half-parsed manual.
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { parseOptionsRst, sectionAnchor } from "./rst.mjs";
 
 const CACHE = ".cache";
-const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRatio: 0.02 };
+const DATA = "site/data/options.json";
+const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRatio: 0.02, degradedRatio: 0.05, nonTextRatio: 0.9 };
 
 /** Newest fetched manual under .cache/<sha>/options.rst. */
 function locate() {
@@ -74,3 +75,30 @@ if (failures.length > 0) {
     process.exit(1);
 }
 console.log("\nOK");
+
+// Metadata half: only meaningful once build-data has run against a real mpv.
+if (existsSync(DATA)) {
+    const data = JSON.parse(readFileSync(DATA, "utf8"));
+    const all = data.options;
+    /** @type {Record<string, number>} */
+    const kinds = {};
+    for (const option of all) kinds[option.widget.kind] = (kinds[option.widget.kind] ?? 0) + 1;
+    const nonText = all.length - (kinds.text ?? 0);
+    const dataReport = {
+        built: all.length,
+        mpvVersion: data.mpvVersion,
+        widgetKinds: kinds,
+        nonTextRatio: nonText / Math.max(all.length, 1),
+        degraded: data.degraded.length,
+        degradedRatio: data.degraded.length / Math.max(all.length, 1),
+        undocumented: data.undocumented.length,
+    };
+    console.log(JSON.stringify(dataReport, null, 2));
+    const bad = [];
+    if (dataReport.nonTextRatio < THRESHOLDS.nonTextRatio) bad.push(`non-text widgets ${(dataReport.nonTextRatio * 100).toFixed(1)}% < 90%`);
+    if (dataReport.degradedRatio > THRESHOLDS.degradedRatio) bad.push(`degraded ${(dataReport.degradedRatio * 100).toFixed(1)}% > 5%`);
+    if (bad.length > 0) {
+        console.error(`\nFAIL\n- ${bad.join("\n- ")}`);
+        process.exit(1);
+    }
+}
