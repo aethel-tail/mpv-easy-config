@@ -1,0 +1,223 @@
+name: update
+
+# Fetches the mpv manual, rebuilds the option data, translates what is missing
+# inside the runner (no API keys anywhere), commits the result and deploys Pages.
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "每个分片最多翻译多少条（0 = 不限）"
+        default: "0"
+      shards:
+        description: "分片数（0 = 用仓库变量 SHARDS，缺省 8）"
+        default: "0"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: update
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "24"
+  LLAMA_TAG: b12600
+  # Override with a repository variable; nothing here is a secret.
+  MODEL_URL: ${{ vars.TRANSLATE_MODEL_URL || 'https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF/resolve/main/Qwen3-4B-Instruct-2507-Q4_K_M.gguf' }}
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+      pending: ${{ steps.diff.outputs.pending }}
+      shards: ${{ steps.diff.outputs.shards }}
+      shardList: ${{ steps.diff.outputs.shardList }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+
+      - name: Fetch the manual revision
+        run: node scripts/fetch-manual.mjs
+
+      - name: Detect an mpv doc change
+        id: diff
+        run: |
+          node -e '
+          const fs = require("node:fs");
+          const out = (key, value) => fs.appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+          const meta = JSON.parse(fs.readFileSync(".cache/meta.json", "utf8"));
+          const committed = JSON.parse(fs.readFileSync("site/data/options.json", "utf8"));
+          const changed = meta.mpvCommit !== committed.mpvCommit;
+          out("changed", changed);
+          const shards = Number(process.env.INPUT_SHARDS || 0) || Number(process.env.VAR_SHARDS || 8);
+          out("shards", shards);
+          out("shardList", JSON.stringify([...Array(shards).keys()]));
+          const load = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return {}; } };
+          const zh = load("site/data/trans.zh.json");
+          const ja = load("site/data/trans.ja.json");
+          const hashes = new Set(committed.options.map((o) => o.textHash));
+          const pending = [...hashes].filter((h) => zh[h] === undefined || ja[h] === undefined).length;
+          out("pending", pending);
+          console.log(`${hashes.size} hashes, ${pending} pending pairs, doc ${changed ? "changed" : "unchanged"}`);
+          '
+        env:
+          INPUT_SHARDS: ${{ inputs.shards }}
+          VAR_SHARDS: ${{ vars.SHARDS }}
+
+      - name: Rebuild the option data
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends mpv
+          node scripts/list-options.mjs
+          node scripts/build-data.mjs
+          node scripts/report.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: data
+          path: site/data/options.json
+          retention-days: 3
+
+  translate:
+    needs: plan
+    if: needs.plan.outputs.pending != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shardList) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: data
+          path: site/data
+
+      - name: Skip an idle shard before paying for the model download
+        id: check
+        run: |
+          echo "pending=$(node scripts/translate.mjs --lang zh --shard ${{ matrix.shard }} --shards ${{ needs.plan.outputs.shards }} --dry-run | grep -oE '^[0-9]+')" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch llama.cpp
+        if: steps.check.outputs.pending != '0'
+        run: |
+          mkdir -p /tmp/llama
+          curl -sSL -o /tmp/llama.tar.gz "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_TAG}/llama-${LLAMA_TAG}-bin-ubuntu-x64.tar.gz"
+          tar -xzf /tmp/llama.tar.gz -C /tmp/llama
+          find /tmp/llama -name llama-server -type f -exec chmod +x {} \;
+
+      - name: Cache the model
+        if: steps.check.outputs.pending != '0'
+        id: model
+        uses: actions/cache@v4
+        with:
+          path: /tmp/model.gguf
+          key: model-${{ hashFiles('.github/workflows/update.yml') }}
+
+      - name: Download the model
+        if: steps.check.outputs.pending != '0' && steps.model.outputs.cache-hit != 'true'
+        run: curl -sSL -o /tmp/model.gguf "$MODEL_URL"
+
+      - name: Start llama-server
+        if: steps.check.outputs.pending != '0'
+        run: |
+          SERVER=$(find /tmp/llama -name llama-server -type f | head -1)
+          "$SERVER" -m /tmp/model.gguf --port 8099 -c 4096 -t 4 --no-warmup > /tmp/server.log 2>&1 &
+          for _ in $(seq 1 90); do
+            if curl -sf http://127.0.0.1:8099/health > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          echo "llama-server did not become healthy"; tail -20 /tmp/server.log; exit 1
+
+      - name: Translate
+        if: steps.check.outputs.pending != '0'
+        run: |
+          for lang in zh ja; do
+            node scripts/translate.mjs --lang "$lang" \
+              --shard ${{ matrix.shard }} --shards ${{ needs.plan.outputs.shards }} \
+              --limit ${{ inputs.limit || 0 }} --budget 2200 \
+              --base-url http://127.0.0.1:8099 --model local
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.check.outputs.pending != '0'
+        with:
+          name: trans-${{ matrix.shard }}
+          path: site/data/trans.*.json
+          retention-days: 3
+          if-no-files-found: ignore
+
+  publish:
+    needs: [plan, translate]
+    if: |
+      always() && needs.plan.result == 'success' &&
+      (needs.plan.outputs.changed == 'true' || needs.plan.outputs.pending != '0')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: data
+          path: site/data
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: trans-*
+          path: parts
+
+      - name: Merge translations
+        run: node scripts/merge-trans.mjs parts site/data
+
+      - name: Rebuild the page
+        run: npm run build
+
+      # Data quality gates always run. Translation coverage is deliberately not gated
+      # here: a partly translated site still deploys and finishes on the next run.
+      - name: Verify the data
+        run: node scripts/report.mjs
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "data: sync mpv@$(node -p "require('./site/data/options.json').mpvCommit.slice(0,7)")"
+            git push
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

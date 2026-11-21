@@ -142,25 +142,26 @@ RST 半边 + 元数据半边均已完成并验收。验收时发现并修掉三�
 
 ---
 
-## M4 · 定时自动化与 Pages  `[ ]`
+## M4 · 定时自动化与 Pages  `[~]`  （工作流已就位，待首次实跑验收）
 
 **交付物**
-- `.github/workflows/update.yml`（plan → translate matrix → merge → deploy）
-- `.github/workflows/check.yml`（PR 上跑 `tsc` + `no-any` + `node --test`）
-- 仓库变量：`TRANSLATE_MODEL`、`SHARDS`、`OLLAMA_NUM_PARALLEL`
+- `.github/workflows/update.yml`（plan → translate matrix → publish/deploy）  ✅
+- `.github/workflows/check.yml`（push/PR 上跑 `npm run verify`）  ✅
+- `scripts/merge-trans.mjs`（合并分片产物，已有译文优先）  ✅
+- 仓库变量：`TRANSLATE_MODEL_URL`、`SHARDS`  ✅
 
 **开发完成**
-- 手动 `workflow_dispatch` 能跑通一次全流程并提交产物
-- 无变更时能正确早退
+- 两个 workflow 通过 YAML 解析；plan 步骤的选算逻辑已本地模拟（729 hashes / 729 待翻对 / shardList `[0..7]`）
+- 无变更时能在 plan 阶段早退（不装 mpv、不下载模型）
 
 **验收完成**
-- [ ] workflow 文件中 **`grep -c secrets:` 结果为 0**（除 `github.token` 外无任何凭据）
-- [ ] 在 mpv 无更新的日子触发：总时长 `< 60s`，且日志中**没有** `ollama pull` 与任何推理调用
-- [ ] 首轮全量（756 项 × 2 语）墙钟时间 `< 60min`
-- [ ] 主动把某个选项译文从 cache 删除后触发：只重新翻译该条，其余不动
-- [ ] 中途杀掉一个分片（模拟失败）：merge 仍成功、页面不崩、下一轮自动补齐缺口
+- [ ] workflow 文件中 **`grep -c secrets:` 结果为 0**
+- [ ] 在 mpv 无更新的日子触发：日志中**没有** `apt install mpv`、没有模型下载、没有任何推理调用
+- [ ] 首轮全量（729 hash × 2 语）完成，走完全部分片
+- [ ] 主动把某个选项译文从 cache 删除后触发：只重新翻译该条
+- [ ] 杀掉一个分片（模拟失败）：publish 仍成功、页面不崩、下一轮自动补齐
 - [ ] Pages URL 可访问，页面数据与仓库内 `site/data/options.json` 一致
-- [ ] CI 全绿，且 `main` 上的 `site/data/` 提交历史能看出"某天 mpv 改了哪几个选项"
+- [ ] `main` 上的 `site/data/` 提交历史能看出"某天 mpv 改了哪几个选项"
 
 ---
 

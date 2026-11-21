@@ -105,9 +105,9 @@ type Option = OptionBase & { widget: Widget };
 
 ## 5. 翻译层
 
-- 模型：`translategemma:4b`（仓库变量 `TRANSLATE_MODEL` 可换）。**不往 4B 以下降级**——增速靠分片，不靠削模型。
-  - 本地验证用 `llama.cpp` 单压缩包 + `Qwen3-0.6B`（共 465 MB，放 `/tmp` 里，用完删文件夹即可，无服务、无系统目录写入）。它只能证明管道通，质量不合格（长描述丢 marker）
-  - 训练时用的专用 MT 模型（translategemma）走 Ollama 的现成打包；两者对代码而言都是 `--base-url` 一个参数的事
+- 模型：CI 默认 `Qwen3-4B-Instruct-2507`（Q4_K_M，GGUF，约 2.5 GB），仓库变量 `TRANSLATE_MODEL_URL` 可换。
+  - **translategemma 没有官方 GGUF**（Google 仓只有 safetensors，unsloth 也没转），而本地/CI 统一用 llama.cpp 一个运行时比引进 Ollama 更简单，所以放弃这个模型。若日后质量不够，再评估用 Ollama 跑它
+  - 本地验证用同一个 llama.cpp 单压缩包 + `Qwen3-0.6B`（共 465 MB，放 `/tmp` 里，用完删文件夹即可）。它只能证明管道通，质量不合格（长描述丢 marker）
 - 一次请求 = 一个选项描述。该模型只支持 User/Assistant 角色、不做 JSON 批量输出，单条请求同时消灭了对齐风险和格式风险。
 - 官方 prompt 模板（注意末尾**两个空行**再接正文，少一个空行质量下降）：
 

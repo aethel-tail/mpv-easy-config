@@ -9,18 +9,21 @@ const CACHE = ".cache";
 const DATA = "site/data/options.json";
 const THRESHOLDS = { options: 700, sections: 15, emptyDescriptions: 0, leakageRatio: 0.02, metadataCoverage: 0.9, translationCoverage: 0.95 };
 
-/** Newest fetched manual under .cache/<sha>/options.rst. */
+/** Newest fetched manual under .cache/<sha>/options.rst, or null when there is none.
+ *  The publish job only has the committed data, so the RST checks become optional. */
 function locate() {
+    if (!existsSync(CACHE)) return null;
     const dirs = readdirSync(CACHE, { withFileTypes: true })
         .filter((d) => d.isDirectory())
         .map((d) => d.name)
         .sort();
     const newest = dirs.at(-1);
-    if (newest === undefined) throw new Error(`no manual in ${CACHE}/; run scripts/fetch-manual.mjs first`);
-    return join(CACHE, newest, "options.rst");
+    return newest === undefined ? null : join(CACHE, newest, "options.rst");
 }
 
-const source = readFileSync(locate(), "utf8");
+const sourcePath = locate();
+if (sourcePath === null) console.log(`(no ${CACHE}/; skipping the RST checks)`);
+const source = sourcePath === null ? "" : readFileSync(sourcePath, "utf8");
 const parsed = parseOptionsRst(source);
 
 const seen = new Map();
@@ -41,6 +44,7 @@ const stripValid = (text) => text.replace(/`` [^`\n]+ ``/g, "").replace(/`` ` ``
 const leaky = options.filter((o) => RST_LEAK.test(stripValid(o.en)));
 
 const report = {
+    sourcePath,
     parsedTerms: parsed.length,
     options: options.length,
     duplicateNames: duplicates,
@@ -52,14 +56,16 @@ const report = {
 console.log(JSON.stringify(report, null, 2));
 
 const failures = [];
+if (sourcePath !== null) {
 if (options.length < THRESHOLDS.options) failures.push(`options ${options.length} < ${THRESHOLDS.options}`);
 if (sections.length < THRESHOLDS.sections) failures.push(`sections ${sections.length} < ${THRESHOLDS.sections}`);
 if (empty.length > THRESHOLDS.emptyDescriptions) failures.push(`empty descriptions ${empty.length} > ${THRESHOLDS.emptyDescriptions}`);
 if (report.leakage.ratio > THRESHOLDS.leakageRatio) failures.push(`rst leakage ${(report.leakage.ratio * 100).toFixed(1)}% > ${THRESHOLDS.leakageRatio * 100}%`);
+}
 
 // Section anchors must exist as ids on the live manual page, otherwise deep links
 // land nowhere. Checked only when asked, since it needs the network.
-if (process.argv.includes("--anchors")) {
+if (sourcePath !== null && process.argv.includes("--anchors")) {
     const html = await (await fetch("https://mpv.io/manual/master/")).text();
     const ids = new Set([...html.matchAll(/\bid=["']([^"']+)["']/g)].map((m) => m[1]));
     const missing = sections.map(sectionAnchor).filter((id) => !ids.has(id));

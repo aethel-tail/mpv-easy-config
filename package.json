@@ -9,7 +9,8 @@
     "build": "tsc -p tsconfig.json",
     "check": "node scripts/no-any.mjs && tsc -p tsconfig.json && tsc -p tsconfig.scripts.json",
     "test": "node --test",
-    "serve": "python -m http.server -d site 8080"
+    "serve": "python -m http.server -d site 8080",
+    "verify": "node scripts/no-any.mjs && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json && node --test"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
