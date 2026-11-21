@@ -67,7 +67,9 @@ if (import.meta.main) {
     }
 
     const caches = ["zh", "ja"].map((lang) => loadCache(`site/data/trans.${lang}.json`));
-    const requested = Number(process.env.SHARDS_INPUT ?? "0") || Number(process.env.SHARDS_VAR ?? "8");
+    // An unset workflow input arrives as an empty string, not as undefined, so `??`
+    // would keep it and number the whole run as a single shard.
+    const requested = Number(process.env.SHARDS_INPUT || 0) || Number(process.env.SHARDS_VAR || 0) || 8;
     const shards = Math.max(requested, 1);
     output("changed", changed);
     output("pending", pendingCount(next.options, caches));

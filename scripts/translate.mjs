@@ -188,6 +188,9 @@ export async function run(argv) {
     const started = Date.now();
     let translated = 0;
     let rejected = 0;
+    /** Written next to the cache so CI failures are visible without admin access to logs. */
+    /** @type {{ name: string, reason: string }[]} */
+    const samples = [];
 
     for (const [index, option] of pending.entries()) {
         if (settings.budget > 0 && (Date.now() - started) / 1000 > settings.budget) {
@@ -200,7 +203,9 @@ export async function run(argv) {
             content = await chat(settings, translatePrompt(source.marked, settings.lang));
         } catch (error) {
             rejected += 1;
-            console.error(`${option.name}: ${/** @type {Error} */ (error).message}`);
+            const message = `unreachable: ${/** @type {Error} */ (error).message}`;
+            console.error(`${option.name}: ${message}`);
+            if (samples.length < 10) samples.push({ name: option.name, reason: message });
             continue;
         }
         const check = checkTranslation(source, content, settings.lang);
@@ -208,6 +213,7 @@ export async function run(argv) {
             // Nothing is written on failure, so the next run simply retries it.
             rejected += 1;
             console.error(`${option.name}: rejected (${check.reason})`);
+            if (samples.length < 10) samples.push({ name: option.name, reason: check.reason });
             continue;
         }
         cache[option.textHash] = restoreText(content.trim(), source.tokens);
@@ -217,6 +223,11 @@ export async function run(argv) {
 
     console.log(
         `translated ${translated}, rejected ${rejected}, cache now ${Object.keys(cache).length} entries -> ${cachePath}`,
+    );
+    writeFileSync(
+        `site/data/trans.${settings.lang}.report.json`,
+        `${JSON.stringify({ lang: settings.lang, shard: settings.shard, pending: pending.length, translated, rejected, samples })}
+`,
     );
 }
 

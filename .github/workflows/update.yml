@@ -165,7 +165,9 @@ jobs:
         if: always() && steps.check.outputs.pending != '0'
         with:
           name: trans-${{ matrix.shard }}
-          path: site/data/trans.*.json
+          path: |
+            site/data/trans.*.json
+            site/data/trans.*.report.json
           retention-days: 3
           if-no-files-found: ignore
 
