@@ -1,4 +1,4 @@
-import { buildMpvConf, countModified, isModified, parseMpvConf } from "./mpvconf.js";
+import { buildConfLines, buildMpvConf, countModified, isModified, parseMpvConf } from "./mpvconf.js";
 const STORAGE_KEY = "mpv-easy-config.v1";
 const LANGS = ["zh", "ja", "en"];
 const LANG_LABELS = { zh: "中文", ja: "日本語", en: "English" };
@@ -11,6 +11,23 @@ function describe(option, lang) {
     return translations[lang][option.textHash] ?? option.en;
 }
 const MAX_SEARCH_HITS = 150;
+/** 常用选项置顶成「推荐」一节；名字对不上当前数据时静默跳过。 */
+const RECOMMENDED = [
+    // 窗口与界面
+    "fullscreen", "border", "ontop", "geometry", "osc", "cursor-autohide",
+    // 播放行为
+    "keep-open", "loop-file", "save-position-on-quit", "speed",
+    // 视频
+    "vo", "hwdec", "scale", "deband", "video-zoom", "vf",
+    // 音频
+    "ao", "volume", "mute", "af",
+    // 轨道与语言
+    "aid", "sid", "alang", "slang",
+    // 字幕
+    "sub-visibility", "sub-font-size",
+    // 其他
+    "cache", "cache-secs", "screenshot-format", "profile",
+];
 function el(tag, className = "", text) {
     const node = document.createElement(tag);
     if (className !== "")
@@ -94,7 +111,7 @@ function setValue(state, name, value, def) {
 }
 function control(option, state, changed) {
     const widget = option.widget;
-    const value = state.values[option.name] ?? widget.def;
+    const current = () => state.values[option.name] ?? widget.def;
     const write = (next) => {
         setValue(state, option.name, next, widget.def);
         changed();
@@ -103,29 +120,40 @@ function control(option, state, changed) {
         case "flag": {
             const box = el("input");
             box.type = "checkbox";
-            box.checked = value === true;
             box.addEventListener("change", () => write(box.checked));
-            return box;
+            const sync = () => {
+                box.checked = current() === true;
+            };
+            sync();
+            return { node: box, sync };
         }
         case "choice": {
-            // A datalist gives the documented values as suggestions while still
-            // allowing anything, since the list comes from one specific build.
-            const box = el("input");
-            const list = el("datalist");
-            const listId = `values-${option.name}`;
-            list.id = listId;
+            // A strict select: the choices come from one specific build, so an imported
+            // value outside the list gets an extra entry rather than being hidden.
+            const select = el("select");
             for (const choice of widget.choices) {
-                const option_ = el("option");
-                option_.value = choice;
-                list.append(option_);
+                const item = el("option");
+                item.value = choice;
+                item.textContent = choice === widget.def ? `${choice}（默认）` : choice;
+                select.append(item);
             }
-            box.type = "text";
-            box.value = String(value);
-            box.setAttribute("list", listId);
-            box.addEventListener("input", () => write(box.value));
-            const wrapper = el("div", "control-with-list");
-            wrapper.append(box, list);
-            return wrapper;
+            const ensureOption = (value) => {
+                if (value !== "" && ![...select.options].some((item) => item.value === value)) {
+                    const extra = el("option");
+                    extra.value = value;
+                    extra.textContent = `${value}（当前值）`;
+                    select.append(extra);
+                }
+            };
+            const sync = () => {
+                const value = String(current());
+                ensureOption(value);
+                select.value = value;
+                select.classList.toggle("dirty", value !== widget.def);
+            };
+            select.addEventListener("change", () => write(select.value));
+            sync();
+            return { node: select, sync };
         }
         case "number": {
             const box = el("input");
@@ -135,21 +163,27 @@ function control(option, state, changed) {
                 box.min = String(widget.min);
             if (widget.max !== null)
                 box.max = String(widget.max);
-            box.value = String(value);
             box.addEventListener("input", () => write(box.value));
-            return box;
+            const sync = () => {
+                box.value = String(current());
+            };
+            sync();
+            return { node: box, sync };
         }
         case "list":
         case "text": {
             const box = el("input");
             box.type = "text";
-            box.value = String(value);
             if (widget.kind === "list")
                 box.placeholder = "逗号分隔";
             if (option.file)
                 box.placeholder = "文件路径";
             box.addEventListener("input", () => write(box.value));
-            return box;
+            const sync = () => {
+                box.value = String(current());
+            };
+            sync();
+            return { node: box, sync };
         }
         default: {
             const unhandled = widget;
@@ -157,42 +191,17 @@ function control(option, state, changed) {
         }
     }
 }
-function manualLink(option) {
-    const link = el("a", "doc-link", "手册");
-    link.href = `https://mpv.io/manual/master/#${option.sectionAnchor}`;
-    link.target = "_blank";
-    link.rel = "noreferrer";
-    link.title = `${option.section}（手册无单选项锚点，搜索 ${option.name}）`;
-    return link;
-}
-function optionRow(option, state, changed) {
-    const row = el("div", "row");
-    if (isModified(option, state.values))
-        row.classList.add("modified");
-    const head = el("div", "row-head");
-    const name = el("code", "opt-name", option.name);
-    if (option.deprecated)
-        name.classList.add("deprecated");
-    head.append(name);
-    if (isModified(option, state.values))
-        head.append(el("span", "badge", "已修改"));
-    head.append(el("span", "spacer"));
-    head.append(manualLink(option));
-    const body = el("div", "row-body");
-    const defaultLabel = option.widget.kind === "flag" ? (option.widget.def ? "是" : "否") : option.widget.def || "空";
-    body.append(el("span", "default", `默认 ${defaultLabel}`));
-    body.append(control(option, state, changed));
-    const text = el("div", "desc");
-    text.append(description(describe(option, state.lang)));
-    row.append(head, body, text);
-    return row;
-}
+const sectionId = (section) => section === "推荐" ? "sec-recommended" : `sec-${section.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 export async function boot() {
     const list = must("#options");
+    const scroller = must("#scroller");
     const sections = must("#sections");
     const search = must("#search");
     const status = must("#status");
     const version = must("#version");
+    const confView = must("#conf-view");
+    const copyButton = must("#copy");
+    const downloadButton = must("#download");
     const res = await fetch("./data/options.json", { cache: "no-cache" });
     if (!res.ok) {
         list.textContent = "数据尚未生成（options.json 缺失）";
@@ -201,7 +210,7 @@ export async function boot() {
     const data = (await res.json());
     translations.zh = await loadTranslations("zh");
     translations.ja = await loadTranslations("ja");
-    const state = { values: load(), section: "", query: "", lang: "zh" };
+    const state = { values: load(), query: "", lang: "zh" };
     const bySection = new Map();
     for (const option of data.options) {
         const bucket = bySection.get(option.section);
@@ -210,30 +219,98 @@ export async function boot() {
         else
             bucket.push(option);
     }
-    const sectionNames = [...bySection.keys()];
-    state.section = sectionNames[0] ?? "";
+    // 「推荐」置顶；与原章节共享同一份 Option 对象，值仍按名字存取
+    const menuSections = new Map();
+    const recommended = RECOMMENDED.map((name) => data.options.find((o) => o.name === name)).filter((o) => o !== undefined);
+    if (recommended.length > 0)
+        menuSections.set("推荐", recommended);
+    for (const [name, bucket] of bySection)
+        menuSections.set(name, bucket);
+    const sectionNames = [...menuSections.keys()];
+    // 同一选项可能出现在「推荐」和原章节两处，改一处要同步另一处的控件与徽章
+    const rowSyncs = new Map();
+    const syncRows = (name) => {
+        for (const fn of rowSyncs.get(name) ?? [])
+            fn();
+    };
+    const header = `mpv-easy-config · mpv master@${data.mpvCommit.slice(0, 7)}`;
     version.textContent = `mpv master@${data.mpvCommit.slice(0, 7)} · ${data.options.length} 项`;
     version.title = `${data.mpvVersion}，生成于 ${data.generatedAt}`;
     const refreshStatus = () => {
         const changed = countModified(data.options, state.values);
-        status.textContent = changed === 0 ? "未修改任何选项" : `已修改 ${changed} 项`;
+        status.textContent = changed === 0 ? "未修改" : `${changed} 项修改`;
     };
-    const renderSidebar = () => {
-        sections.replaceChildren();
-        for (const name of sectionNames) {
-            const button = el("button", "section", name);
-            button.type = "button";
-            if (name === state.section && state.query === "")
-                button.classList.add("active");
-            button.append(el("span", "count", String(bySection.get(name)?.length ?? 0)));
-            button.addEventListener("click", () => {
-                state.section = name;
-                state.query = "";
-                search.value = "";
-                render();
-            });
-            sections.append(button);
+    // ===== 左侧：conf 实时预览 =====
+    const renderConf = () => {
+        const lines = buildConfLines(data.options, state.values);
+        copyButton.hidden = lines.length === 0;
+        downloadButton.hidden = lines.length === 0;
+        confView.replaceChildren();
+        if (lines.length === 0) {
+            confView.append(el("span", "empty", "# 还没有改动任何选项。\n# 在右侧修改后，这里会实时生成 mpv.conf 内容。"));
+            return;
         }
+        confView.append(el("span", "conf-comment", `# ${header}`), "\n");
+        for (const line of lines) {
+            const lineEl = el("span", "conf-line");
+            if (line.flag) {
+                lineEl.append(el("span", line.on ? "k" : "flag-no", line.text));
+            }
+            else {
+                const eq = line.text.indexOf("=");
+                lineEl.append(el("span", "k", line.text.slice(0, eq)), el("span", "eq", "="), el("span", "v", line.text.slice(eq + 1)));
+            }
+            confView.append(lineEl, "\n");
+        }
+    };
+    // ===== 右侧：选项行 =====
+    const optionRow = (option) => {
+        const row = el("div", "row");
+        const badge = el("span", "badge", "已修改");
+        const markRow = () => {
+            const modified = isModified(option, state.values);
+            row.classList.toggle("modified", modified);
+            badge.hidden = !modified;
+        };
+        markRow();
+        const head = el("div", "row-head");
+        const name = el("code", "opt-name", option.name);
+        if (option.deprecated)
+            name.classList.add("deprecated");
+        head.append(name, badge, el("span", "spacer"));
+        const resetButton = el("button", "reset-row", "↺");
+        resetButton.type = "button";
+        resetButton.title = "重置为默认值";
+        resetButton.addEventListener("click", () => {
+            delete state.values[option.name];
+            store(state);
+            syncRows(option.name);
+            renderConf();
+            refreshStatus();
+        });
+        head.append(resetButton);
+        const body = el("div", "row-body");
+        const defaultLabel = option.widget.kind === "flag" ? (option.widget.def ? "是" : "否") : option.widget.def || "空";
+        body.append(el("span", "default", `默认 ${defaultLabel}`));
+        // Row-local updates only: with the full list rendered, a whole-list
+        // re-render per keystroke would lose focus and crawl.
+        const { node, sync } = control(option, state, () => {
+            syncRows(option.name);
+            renderConf();
+            refreshStatus();
+        });
+        const rowSync = () => {
+            sync();
+            markRow();
+        };
+        const syncSet = rowSyncs.get(option.name) ?? new Set();
+        syncSet.add(rowSync);
+        rowSyncs.set(option.name, syncSet);
+        body.append(node);
+        const text = el("div", "desc");
+        text.append(description(describe(option, state.lang)));
+        row.append(head, body, text);
+        return row;
     };
     const matches = (option) => {
         const query = state.query.toLowerCase();
@@ -242,37 +319,104 @@ export async function boot() {
             option.en.toLowerCase().includes(query) ||
             localized.includes(query));
     };
-    const render = () => {
-        const changed = () => {
-            refreshStatus();
-            render();
-        };
-        const rows = [];
+    const renderList = () => {
+        rowSyncs.clear();
         if (state.query !== "") {
             const hits = data.options.filter(matches).slice(0, MAX_SEARCH_HITS);
-            list.replaceChildren();
-            const heading = el("h2", "list-title", `搜索 “${state.query}” · ${hits.length} 个结果`);
-            list.append(heading);
+            list.replaceChildren(el("h2", "list-title", `搜索 “${state.query}” · ${hits.length} 个结果`));
             for (const option of hits) {
                 const group = el("div", "hit");
                 group.append(el("span", "hit-section", option.section));
-                group.append(optionRow(option, state, changed));
-                rows.push(group);
+                group.append(optionRow(option));
+                list.append(group);
             }
-            list.append(...rows);
+            return;
+        }
+        const nodes = [];
+        for (const name of sectionNames) {
+            const heading = el("h2", "section-title");
+            heading.id = sectionId(name);
+            heading.dataset["section"] = name;
+            heading.append(el("span", "", name));
+            heading.append(el("span", "count", `${menuSections.get(name)?.length ?? 0} 项`));
+            nodes.push(heading);
+            for (const option of menuSections.get(name) ?? []) {
+                if (name === "推荐") {
+                    // 推荐是镜像，标出原章节方便找回
+                    const group = el("div", "hit");
+                    group.append(el("span", "hit-section", option.section));
+                    group.append(optionRow(option));
+                    nodes.push(group);
+                }
+                else {
+                    nodes.push(optionRow(option));
+                }
+            }
+        }
+        list.replaceChildren(...nodes);
+    };
+    // ===== 章节菜单：点击跳转，scrollspy 只在用户手动滚动时接管 =====
+    let spyEnabled = true;
+    const setMenuActive = (name) => {
+        for (const button of sections.querySelectorAll("button"))
+            button.classList.toggle("active", button.dataset["section"] === name);
+    };
+    const renderMenu = () => {
+        sections.replaceChildren();
+        for (const name of sectionNames) {
+            const button = el("button");
+            button.type = "button";
+            button.dataset["section"] = name;
+            button.append(el("span", "", name));
+            button.append(el("span", "count", String(menuSections.get(name)?.length ?? 0)));
+            button.addEventListener("click", () => {
+                if (state.query !== "") {
+                    state.query = "";
+                    search.value = "";
+                    renderList();
+                }
+                // 末尾短章节永远滚不到顶，纯 scrollspy 会亮错，所以点击期间高亮跟随点击
+                spyEnabled = false;
+                setMenuActive(name);
+                document.getElementById(sectionId(name))?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+            sections.append(button);
+        }
+    };
+    const renderMenuActive = () => {
+        if (!spyEnabled || state.query !== "")
+            return;
+        const titles = [...list.querySelectorAll(".section-title")];
+        let active = "";
+        if (titles.length > 0 && scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4) {
+            active = titles[titles.length - 1]?.dataset["section"] ?? "";
         }
         else {
-            const options_ = bySection.get(state.section) ?? [];
-            list.replaceChildren(el("h2", "list-title", state.section), ...options_.map((option) => optionRow(option, state, changed)));
+            const top = scroller.getBoundingClientRect().top;
+            for (const title of titles) {
+                if (title.getBoundingClientRect().top <= top + 60)
+                    active = title.dataset["section"] ?? "";
+            }
+            if (active === "" && titles.length > 0)
+                active = titles[0]?.dataset["section"] ?? "";
         }
-        renderSidebar();
+        setMenuActive(active);
     };
+    scroller.addEventListener("scroll", () => requestAnimationFrame(renderMenuActive), { passive: true });
+    for (const event of ["wheel", "touchmove", "keydown"])
+        scroller.addEventListener(event, () => {
+            spyEnabled = true;
+        }, { passive: true });
     search.addEventListener("input", () => {
         state.query = search.value.trim();
-        render();
+        setMenuActive("");
+        renderList();
     });
+    renderMenu();
+    renderList();
+    renderConf();
     refreshStatus();
-    render();
+    renderMenuActive();
     const langButton = must("#lang");
     const showLang = () => {
         langButton.textContent = LANG_LABELS[state.lang];
@@ -283,53 +427,21 @@ export async function boot() {
         if (next !== undefined)
             state.lang = next;
         showLang();
-        render();
+        renderList();
     });
     showLang();
-    // Export / import share one dialog: pasting a config is the fast path for both.
-    const dialog = must("#dialog");
-    const dialogTitle = must("#dialog-title");
-    const dialogText = must("#dialog-text");
-    const dialogNote = must("#dialog-note");
-    const copyButton = must("#dialog-copy");
-    const downloadButton = must("#dialog-download");
-    const importButton = must("#dialog-import");
-    const openExport = () => {
-        const header = `mpv-easy-config · mpv master@${data.mpvCommit.slice(0, 7)}`;
-        const conf = buildMpvConf(data.options, state.values, header);
-        dialogTitle.textContent = "导出 mpv.conf";
-        dialogText.value = conf === "" ? "" : conf;
-        dialogText.readOnly = true;
-        dialogNote.textContent = conf === "" ? "还没有改动任何选项，导出为空。" : `${conf.trim().split("\n").length - 1} 行有效配置。`;
-        copyButton.hidden = conf === "";
-        downloadButton.hidden = conf === "";
-        importButton.hidden = true;
-        dialog.showModal();
-    };
-    const openImport = () => {
-        dialogTitle.textContent = "导入 mpv.conf";
-        dialogText.value = "";
-        dialogText.readOnly = false;
-        dialogNote.textContent = "粘贴现有 mpv.conf 内容，未知选项会列出来但不会丢弃。";
-        copyButton.hidden = true;
-        downloadButton.hidden = true;
-        importButton.hidden = false;
-        dialog.showModal();
-    };
-    must("#export").addEventListener("click", openExport);
-    must("#import").addEventListener("click", openImport);
-    must("#reset").addEventListener("click", () => {
-        state.values = {};
-        store(state);
-        refreshStatus();
-        render();
-    });
+    // ===== 预览面板的复制 / 下载 =====
     copyButton.addEventListener("click", () => {
-        void navigator.clipboard.writeText(dialogText.value);
-        dialogNote.textContent = "已复制到剪贴板。";
+        navigator.clipboard.writeText(buildMpvConf(data.options, state.values, header)).then(() => {
+            status.textContent = "已复制";
+            setTimeout(refreshStatus, 1500);
+        }, () => {
+            status.textContent = "复制失败";
+            setTimeout(refreshStatus, 1500);
+        });
     });
     downloadButton.addEventListener("click", () => {
-        const blob = new Blob([dialogText.value], { type: "text/plain" });
+        const blob = new Blob([buildMpvConf(data.options, state.values, header)], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const anchor = el("a");
         anchor.href = url;
@@ -337,12 +449,32 @@ export async function boot() {
         anchor.click();
         URL.revokeObjectURL(url);
     });
+    // ===== 导入 =====
+    const dialog = must("#dialog");
+    const dialogText = must("#dialog-text");
+    const dialogNote = must("#dialog-note");
+    const importButton = must("#dialog-import");
+    must("#import").addEventListener("click", () => {
+        dialogText.value = "";
+        dialogText.readOnly = false;
+        dialogNote.textContent = "粘贴现有 mpv.conf 内容，未知选项会列出来但不会丢弃。";
+        importButton.hidden = false;
+        dialog.showModal();
+    });
+    must("#reset").addEventListener("click", () => {
+        state.values = {};
+        store(state);
+        renderConf();
+        refreshStatus();
+        renderList();
+    });
     importButton.addEventListener("click", () => {
         const parsed = parseMpvConf(dialogText.value, data.options);
         state.values = { ...state.values, ...parsed.values };
         store(state);
+        renderConf();
         refreshStatus();
-        render();
+        renderList();
         dialogNote.textContent =
             parsed.unknown.length === 0
                 ? `导入完成，未发现未知选项。`

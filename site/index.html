@@ -10,43 +10,52 @@
         <header class="topbar">
             <h1>mpv 配置</h1>
             <input id="search" type="search" placeholder="搜索选项名或说明…" autocomplete="off" />
-            <output id="status" class="muted"></output>
             <span class="spacer"></span>
-            <button id="lang" type="button" class="ghost">中文</button>
             <button id="lang" type="button" class="ghost">中文</button>
             <button id="reset" type="button" class="ghost">清空修改</button>
             <button id="import" type="button" class="ghost">导入</button>
-            <button id="export" type="button">导出 mpv.conf</button>
             <output id="version" class="muted"></output>
         </header>
 
-        <div class="layout">
-            <nav id="sections" class="sections" aria-label="章节"></nav>
-            <main id="options" class="options">
-                <p class="muted">loading…</p>
-            </main>
+        <div class="split">
+            <section class="pane-conf" aria-label="mpv.conf 预览">
+                <div class="pane-conf-head">
+                    <h2>mpv.conf 预览</h2>
+                    <output id="status" class="muted"></output>
+                    <span class="spacer"></span>
+                    <button id="copy" type="button" class="ghost">复制</button>
+                    <button id="download" type="button" class="ghost">下载</button>
+                </div>
+                <pre id="conf-view"></pre>
+            </section>
+
+            <section class="pane-main">
+                <nav id="sections" class="menu" aria-label="章节"></nav>
+                <div id="scroller" class="scroller">
+                    <main id="options">
+                        <p class="muted">loading…</p>
+                    </main>
+                    <footer class="footer muted">
+                        <p>
+                            配置项说明译自 <a href="https://mpv.io/manual/master/" rel="noreferrer">mpv 手册</a>（GPLv2+），
+                            由机器翻译生成，<strong>非官方翻译</strong>。原文版权归 mpv 项目作者所有。
+                        </p>
+                        <p>本页为纯静态页面，不上传任何数据；配置只保存在你的浏览器里。</p>
+                    </footer>
+                </div>
+            </section>
         </div>
 
         <dialog id="dialog">
-            <h2 id="dialog-title"></h2>
+            <h2>导入 mpv.conf</h2>
             <textarea id="dialog-text" spellcheck="false"></textarea>
             <p id="dialog-note" class="muted"></p>
             <div class="dialog-actions">
-                <button id="dialog-copy" type="button" class="ghost">复制</button>
-                <button id="dialog-download" type="button" class="ghost">下载文件</button>
                 <button id="dialog-import" type="button">导入文本</button>
                 <span class="spacer"></span>
                 <form method="dialog"><button type="submit" class="ghost">关闭</button></form>
             </div>
         </dialog>
-
-        <footer class="footer muted">
-            <p>
-                配置项说明译自 <a href="https://mpv.io/manual/master/" rel="noreferrer">mpv 手册</a>（GPLv2+），
-                由机器翻译生成，<strong>非官方翻译</strong>。原文版权归 mpv 项目作者所有。
-            </p>
-            <p>本页为纯静态页面，不上传任何数据；配置只保存在你的浏览器里。</p>
-        </footer>
 
         <script type="module" src="./app.js"></script>
     </body>

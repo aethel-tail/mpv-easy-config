@@ -11,7 +11,7 @@ export function isModified(option, values) {
  * Values that equal the default are omitted, and so is an emptied text field: writing
  * `scale=` would make mpv complain, while omitting it simply keeps the default.
  */
-export function buildMpvConf(options, values, header = "") {
+export function buildConfLines(options, values) {
     const lines = [];
     for (const option of [...options].sort((a, b) => a.name.localeCompare(b.name))) {
         const value = values[option.name];
@@ -20,14 +20,18 @@ export function buildMpvConf(options, values, header = "") {
         if (typeof value === "boolean") {
             if (option.widget.kind !== "flag")
                 continue;
-            lines.push(value ? option.name : `no-${option.name}`);
+            lines.push({ name: option.name, text: value ? option.name : `no-${option.name}`, flag: true, on: value });
             continue;
         }
         const trimmed = value.trim();
         if (trimmed === "")
             continue;
-        lines.push(`${option.name}=${trimmed}`);
+        lines.push({ name: option.name, text: `${option.name}=${trimmed}`, flag: false, on: true });
     }
+    return lines;
+}
+export function buildMpvConf(options, values, header = "") {
+    const lines = buildConfLines(options, values).map((line) => line.text);
     // An empty config is what tells the caller "nothing to export"; a lone comment
     // would look like a successful export to mpv and to the user.
     if (lines.length === 0)
