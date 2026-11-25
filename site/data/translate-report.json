@@ -11,20 +11,20 @@
         "reason": "markers [0,1,3,2,4,5,6] != [0,1,2,3,4,5,6]"
       },
       {
-        "name": "cookies-file",
-        "reason": "output is not in the target language"
+        "name": "tls-key-file",
+        "reason": "length ratio 0.22"
       },
       {
-        "name": "fbo-format",
-        "reason": "markers [1] != [0,1]"
+        "name": "macos-geometry-calculation",
+        "reason": "markers [] != [0,1]"
       },
       {
-        "name": "background",
-        "reason": "markers [] != [0,1,2,3,4,5]"
+        "name": "hdr-reference-white",
+        "reason": "markers [0,1,2,2] != [0,1,2]"
       },
       {
-        "name": "register",
-        "reason": "markers [1,2,3,4,5,6,7,8,9,10] != [0,1,2,3,4,5,6,7,8,9,10]"
+        "name": "inverse-tone-mapping",
+        "reason": "markers [] != [0]"
       }
     ]
   },
@@ -48,16 +48,16 @@
         "reason": "markers [0,1,2,3,4,5,6,7,8,7,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47]"
       },
       {
-        "name": "scale-clamp",
-        "reason": "markers [] != [0,1,2]"
+        "name": "gpu-api",
+        "reason": "markers [] != [0,1]"
       },
       {
-        "name": "background",
-        "reason": "markers [] != [0,1,2,3,4,5]"
+        "name": "target-colorspace-hint-mode",
+        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]"
       },
       {
-        "name": "force-media-title",
-        "reason": "markers [0] != [0,1]"
+        "name": "hdr-reference-white",
+        "reason": "markers [0,1,2,2] != [0,1,2]"
       }
     ]
   },
@@ -73,28 +73,28 @@
         "reason": "markers [0,1,2,3,3,4] != [0,1,2,3,4]"
       },
       {
-        "name": "http-header-fields",
-        "reason": "output is not in the target language"
+        "name": "vd-queue-enable",
+        "reason": "markers [1,2,3,2] != [0,1,2,3]"
       },
       {
-        "name": "cscale",
-        "reason": "markers [] != [0,1]"
+        "name": "sigmoid-upscaling",
+        "reason": "markers [0,0,1,2] != [0,1,2]"
       },
       {
-        "name": "tone-mapping",
-        "reason": "markers [1,0,3,2,4,5,6,7,8,9,10,11,12] != [0,1,2,3,4,5,6,7,8,9,10,11,12]"
+        "name": "dither-size-fruit",
+        "reason": "markers [0,2] != [0,1,2]"
       },
       {
-        "name": "external-files",
-        "reason": "markers [1,2] != [0,1,2]"
+        "name": "tone-mapping-max-boost",
+        "reason": "markers [] != [0]"
       }
     ]
   },
   {
     "lang": "ja",
     "shard": 1,
-    "pending": 6,
-    "translated": 0,
+    "pending": 7,
+    "translated": 1,
     "rejected": 6,
     "samples": [
       {
@@ -106,29 +106,29 @@
         "reason": "markers [] != [0,1,2]"
       },
       {
-        "name": "cscale",
-        "reason": "markers [] != [0,1]"
+        "name": "cache-secs",
+        "reason": "markers [0,0,1] != [0,1]"
       },
       {
-        "name": "cscale-clamp",
-        "reason": "markers [] != [0,1,2]"
+        "name": "dvbin-channel-switch-offset",
+        "reason": "markers [0,1,2,3,5,6] != [0,1,2,3,4,5,6]"
       },
       {
-        "name": "tone-mapping",
-        "reason": "markers [1,0,3,2,4,5,6,7,8,9,10,11,12] != [0,1,2,3,4,5,6,7,8,9,10,11,12]"
+        "name": "dither-size-fruit",
+        "reason": "markers [1,0,2] != [0,1,2]"
       },
       {
-        "name": "external-files",
-        "reason": "markers [1,2] != [0,1,2]"
+        "name": "mf-fps",
+        "reason": "markers [] != [0]"
       }
     ]
   },
   {
     "lang": "zh",
     "shard": 2,
-    "pending": 7,
-    "translated": 0,
-    "rejected": 7,
+    "pending": 10,
+    "translated": 1,
+    "rejected": 9,
     "samples": [
       {
         "name": "ab-loop-a",
@@ -151,12 +151,20 @@
         "reason": "length ratio 0.29"
       },
       {
-        "name": "dscale",
-        "reason": "markers [] != [0]"
+        "name": "cookies-file",
+        "reason": "output is not in the target language"
       },
       {
-        "name": "hdr-mastering-clip",
-        "reason": "markers [] != [0]"
+        "name": "fbo-format",
+        "reason": "markers [1] != [0,1]"
+      },
+      {
+        "name": "background",
+        "reason": "markers [] != [0,1,2,3,4,5]"
+      },
+      {
+        "name": "register",
+        "reason": "markers [1,2,3,4,5,6,7,8,9,10] != [0,1,2,3,4,5,6,7,8,9,10]"
       }
     ]
   },
@@ -164,8 +172,8 @@
     "lang": "ja",
     "shard": 2,
     "pending": 7,
-    "translated": 0,
-    "rejected": 7,
+    "translated": 1,
+    "rejected": 6,
     "samples": [
       {
         "name": "ab-loop-a",
@@ -180,29 +188,25 @@
         "reason": "unreachable: fetch failed"
       },
       {
-        "name": "dscale-clamp",
+        "name": "scale-clamp",
         "reason": "markers [] != [0,1,2]"
       },
       {
-        "name": "android-surface-size",
-        "reason": "markers [] != [0]"
+        "name": "background",
+        "reason": "markers [] != [0,1,2,3,4,5]"
       },
       {
-        "name": "tone-mapping-reinhard-contrast",
-        "reason": "markers [1] != [0,1]"
-      },
-      {
-        "name": "video-sync",
-        "reason": "markers [0,1,2,3,4,5,6,7,8,9] != [0,1,2,3,4,5,6,7,8,9,10,11]"
+        "name": "force-media-title",
+        "reason": "markers [0] != [0,1]"
       }
     ]
   },
   {
     "lang": "zh",
     "shard": 3,
-    "pending": 6,
+    "pending": 7,
     "translated": 0,
-    "rejected": 6,
+    "rejected": 7,
     "samples": [
       {
         "name": "pitch",
@@ -217,25 +221,29 @@
         "reason": "markers [0,1,2,3,4,6,5,7,8,9,10,11] != [0,1,2,3,4,5,6,7,8,9,10,11]"
       },
       {
-        "name": "glsl-shaders",
-        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]"
+        "name": "http-header-fields",
+        "reason": "output is not in the target language"
       },
       {
-        "name": "tone-mapping-knee-minimum",
-        "reason": "markers [] != [0]"
+        "name": "cscale",
+        "reason": "markers [] != [0,1]"
       },
       {
-        "name": "lavfi-complex",
-        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10,11,13,12,14,14,15,16] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]"
+        "name": "tone-mapping",
+        "reason": "markers [1,0,3,2,4,5,6,7,8,9,10,11,12] != [0,1,2,3,4,5,6,7,8,9,10,11,12]"
+      },
+      {
+        "name": "external-files",
+        "reason": "markers [1,2] != [0,1,2]"
       }
     ]
   },
   {
     "lang": "ja",
     "shard": 3,
-    "pending": 6,
+    "pending": 7,
     "translated": 0,
-    "rejected": 6,
+    "rejected": 7,
     "samples": [
       {
         "name": "pitch",
@@ -250,25 +258,29 @@
         "reason": "markers [0,1,2,3,4,6,5,7,8,9,10,11] != [0,1,2,3,4,5,6,7,8,9,10,11]"
       },
       {
-        "name": "tscale-clamp",
+        "name": "cscale",
+        "reason": "markers [] != [0,1]"
+      },
+      {
+        "name": "cscale-clamp",
         "reason": "markers [] != [0,1,2]"
       },
       {
-        "name": "glsl-shaders",
-        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]"
+        "name": "tone-mapping",
+        "reason": "markers [1,0,3,2,4,5,6,7,8,9,10,11,12] != [0,1,2,3,4,5,6,7,8,9,10,11,12]"
       },
       {
-        "name": "lavfi-complex",
-        "reason": "markers [0,1,2,3,4,5,6,9,7,8,10,11,12,13,14,15,16] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]"
+        "name": "external-files",
+        "reason": "markers [1,2] != [0,1,2]"
       }
     ]
   },
   {
     "lang": "zh",
     "shard": 4,
-    "pending": 5,
+    "pending": 4,
     "translated": 0,
-    "rejected": 5,
+    "rejected": 4,
     "samples": [
       {
         "name": "bluray-key-file",
@@ -276,28 +288,24 @@
       },
       {
         "name": "demuxer-seekable-cache",
-        "reason": "markers [0,1,2,4,5,7,6] != [0,1,2,3,4,5,6,7]"
+        "reason": "markers [0,1,2,4,3,5,7,6] != [0,1,2,3,4,5,6,7]"
       },
       {
-        "name": "tone-mapping-knee-maximum",
+        "name": "dscale",
         "reason": "markers [] != [0]"
       },
       {
-        "name": "background-tile-size",
+        "name": "hdr-mastering-clip",
         "reason": "markers [] != [0]"
-      },
-      {
-        "name": "video-sync-max-video-change",
-        "reason": "markers [1,2,3,4,5] != [0,1,2,3,4,5]"
       }
     ]
   },
   {
     "lang": "ja",
     "shard": 4,
-    "pending": 5,
+    "pending": 9,
     "translated": 0,
-    "rejected": 5,
+    "rejected": 9,
     "samples": [
       {
         "name": "sub-hdr-peak",
@@ -318,15 +326,31 @@
       {
         "name": "demuxer-seekable-cache",
         "reason": "markers [0,1,2,4,5,7,6] != [0,1,2,3,4,5,6,7]"
+      },
+      {
+        "name": "dscale-clamp",
+        "reason": "markers [] != [0,1,2]"
+      },
+      {
+        "name": "android-surface-size",
+        "reason": "markers [] != [0]"
+      },
+      {
+        "name": "tone-mapping-reinhard-contrast",
+        "reason": "markers [1] != [0,1]"
+      },
+      {
+        "name": "video-sync",
+        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10] != [0,1,2,3,4,5,6,7,8,9,10,11]"
       }
     ]
   },
   {
     "lang": "zh",
     "shard": 5,
-    "pending": 5,
+    "pending": 6,
     "translated": 0,
-    "rejected": 5,
+    "rejected": 6,
     "samples": [
       {
         "name": "deinterlace-field-parity",
@@ -341,21 +365,25 @@
         "reason": "markers [1,2,3,4,5,6,7,8] != [0,1,2,3,4,5,6,7,8]"
       },
       {
-        "name": "tls-cert-file",
-        "reason": "length ratio 0.24"
+        "name": "glsl-shaders",
+        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]"
       },
       {
-        "name": "video-sync-max-audio-change",
+        "name": "tone-mapping-knee-minimum",
         "reason": "markers [] != [0]"
+      },
+      {
+        "name": "lavfi-complex",
+        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10,11,13,12,14,14,15,16] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]"
       }
     ]
   },
   {
     "lang": "ja",
     "shard": 5,
-    "pending": 5,
-    "translated": 1,
-    "rejected": 4,
+    "pending": 6,
+    "translated": 0,
+    "rejected": 6,
     "samples": [
       {
         "name": "keepaspect-window",
@@ -370,21 +398,29 @@
         "reason": "markers [1,2,3,4,5,6,7,8] != [0,1,2,3,4,5,6,7,8]"
       },
       {
-        "name": "vulkan-display-display",
-        "reason": "markers [1] != [0,1]"
+        "name": "tscale-clamp",
+        "reason": "markers [] != [0,1,2]"
+      },
+      {
+        "name": "glsl-shaders",
+        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53]"
+      },
+      {
+        "name": "lavfi-complex",
+        "reason": "markers [0,1,2,3,4,5,6,9,7,8,10,11,12,13,14,15,16] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]"
       }
     ]
   },
   {
     "lang": "zh",
     "shard": 6,
-    "pending": 9,
+    "pending": 8,
     "translated": 0,
-    "rejected": 9,
+    "rejected": 8,
     "samples": [
       {
         "name": "ytdl",
-        "reason": "markers [0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37]"
+        "reason": "markers [0,1,2,3,4,5,6,7,9,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37]"
       },
       {
         "name": "ad",
@@ -403,29 +439,25 @@
         "reason": "markers [0,1,2,3,2] != [0,1,2,3]"
       },
       {
-        "name": "tls-key-file",
-        "reason": "length ratio 0.22"
-      },
-      {
-        "name": "macos-geometry-calculation",
-        "reason": "markers [] != [0,1]"
-      },
-      {
-        "name": "hdr-reference-white",
-        "reason": "markers [0,1,2,2] != [0,1,2]"
-      },
-      {
-        "name": "inverse-tone-mapping",
+        "name": "tone-mapping-knee-maximum",
         "reason": "markers [] != [0]"
+      },
+      {
+        "name": "background-tile-size",
+        "reason": "markers [] != [0]"
+      },
+      {
+        "name": "video-sync-max-video-change",
+        "reason": "markers [1,2,3,4,5] != [0,1,2,3,4,5]"
       }
     ]
   },
   {
     "lang": "ja",
     "shard": 6,
-    "pending": 7,
+    "pending": 4,
     "translated": 0,
-    "rejected": 7,
+    "rejected": 4,
     "samples": [
       {
         "name": "ytdl",
@@ -442,27 +474,15 @@
       {
         "name": "sub-vsfilter-bidi-compat",
         "reason": "markers [0] != [0,1]"
-      },
-      {
-        "name": "gpu-api",
-        "reason": "markers [] != [0,1]"
-      },
-      {
-        "name": "target-colorspace-hint-mode",
-        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]"
-      },
-      {
-        "name": "hdr-reference-white",
-        "reason": "markers [0,1,2,2] != [0,1,2]"
       }
     ]
   },
   {
     "lang": "zh",
     "shard": 7,
-    "pending": 8,
+    "pending": 6,
     "translated": 0,
-    "rejected": 8,
+    "rejected": 6,
     "samples": [
       {
         "name": "end",
@@ -481,19 +501,11 @@
         "reason": "length ratio 0.28"
       },
       {
-        "name": "vd-queue-enable",
-        "reason": "markers [1,2,3,2] != [0,1,2,3]"
+        "name": "tls-cert-file",
+        "reason": "length ratio 0.24"
       },
       {
-        "name": "sigmoid-upscaling",
-        "reason": "markers [0,0,1,2] != [0,1,2]"
-      },
-      {
-        "name": "dither-size-fruit",
-        "reason": "markers [0,2] != [0,1,2]"
-      },
-      {
-        "name": "tone-mapping-max-boost",
+        "name": "video-sync-max-audio-change",
         "reason": "markers [] != [0]"
       }
     ]
@@ -501,9 +513,9 @@
   {
     "lang": "ja",
     "shard": 7,
-    "pending": 8,
+    "pending": 5,
     "translated": 0,
-    "rejected": 8,
+    "rejected": 5,
     "samples": [
       {
         "name": "access-references",
@@ -522,20 +534,8 @@
         "reason": "markers [] != [0]"
       },
       {
-        "name": "cache-secs",
-        "reason": "markers [0,0,1] != [0,1]"
-      },
-      {
-        "name": "dvbin-channel-switch-offset",
-        "reason": "markers [0,1,2,3,5,6] != [0,1,2,3,4,5,6]"
-      },
-      {
-        "name": "dither-size-fruit",
-        "reason": "markers [1,0,2] != [0,1,2]"
-      },
-      {
-        "name": "mf-fps",
-        "reason": "markers [] != [0]"
+        "name": "vulkan-display-display",
+        "reason": "markers [1] != [0,1]"
       }
     ]
   }
