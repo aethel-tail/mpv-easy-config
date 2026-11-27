@@ -64,8 +64,8 @@
   {
     "lang": "zh",
     "shard": 1,
-    "pending": 6,
-    "translated": 1,
+    "pending": 5,
+    "translated": 0,
     "rejected": 5,
     "samples": [
       {
@@ -93,8 +93,8 @@
   {
     "lang": "ja",
     "shard": 1,
-    "pending": 7,
-    "translated": 1,
+    "pending": 6,
+    "translated": 0,
     "rejected": 6,
     "samples": [
       {
@@ -304,16 +304,12 @@
     "lang": "ja",
     "shard": 4,
     "pending": 9,
-    "translated": 0,
-    "rejected": 9,
+    "translated": 1,
+    "rejected": 8,
     "samples": [
       {
         "name": "sub-hdr-peak",
         "reason": "markers [0,2,3,4] != [0,1,2,3,4]"
-      },
-      {
-        "name": "keepaspect",
-        "reason": "markers [] != [0]"
       },
       {
         "name": "wid",
@@ -341,15 +337,15 @@
       },
       {
         "name": "video-sync",
-        "reason": "markers [0,1,2,3,4,5,6,7,8,9,10] != [0,1,2,3,4,5,6,7,8,9,10,11]"
+        "reason": "markers [0,1,2,3,4,5,6,7,8,9] != [0,1,2,3,4,5,6,7,8,9,10,11]"
       }
     ]
   },
   {
     "lang": "zh",
     "shard": 5,
-    "pending": 6,
-    "translated": 0,
+    "pending": 7,
+    "translated": 1,
     "rejected": 6,
     "samples": [
       {
@@ -381,8 +377,8 @@
   {
     "lang": "ja",
     "shard": 5,
-    "pending": 6,
-    "translated": 0,
+    "pending": 7,
+    "translated": 1,
     "rejected": 6,
     "samples": [
       {
@@ -415,12 +411,12 @@
     "lang": "zh",
     "shard": 6,
     "pending": 8,
-    "translated": 0,
-    "rejected": 8,
+    "translated": 1,
+    "rejected": 7,
     "samples": [
       {
         "name": "ytdl",
-        "reason": "markers [0,1,2,3,4,5,6,7,9,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37]"
+        "reason": "markers [0,1,2,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35] != [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37]"
       },
       {
         "name": "ad",
@@ -445,10 +441,6 @@
       {
         "name": "background-tile-size",
         "reason": "markers [] != [0]"
-      },
-      {
-        "name": "video-sync-max-video-change",
-        "reason": "markers [1,2,3,4,5] != [0,1,2,3,4,5]"
       }
     ]
   },
